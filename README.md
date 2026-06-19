@@ -65,6 +65,9 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
   - Update email (requires current password confirmation)
   - Change password (invalidates all other active sessions)
   - View Google account link status
+  - **Delete account** — permanently removes all events, guests, and data (GDPR compliant)
+- **Privacy Policy** at `/privacy` — data collection, retention, third-parties, user rights
+- **Terms of Service** at `/terms` — usage rules, payment terms, data ownership
 
 ### Access Control & Limits
 | Plan | Guest limit | Active events |
@@ -166,8 +169,8 @@ Tests run against SQLite in-memory — no external services required.
 php artisan test
 ```
 
-**81 tests, 186 assertions** across:
-- `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling), profile updates, password change
+**83 tests, 191 assertions** across:
+- `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling), profile updates, password change, account deletion
 - `EventTest` — CRUD, publish/archive state guards, RSVP deadline validation, free tier limits
 - `GuestTest` — guest management, plan limit enforcement, CSV export, invitations
 - `RsvpTest` — RSVP flow, preferences, plus-ones, deadline enforcement, host notifications
@@ -257,6 +260,7 @@ All API routes are under `/api/`. Authenticated endpoints require `Authorization
 | GET | `/auth/google/callback` | — | Google OAuth callback → token → SPA redirect (web route) |
 | PUT | `/api/auth/profile` | ✓ | Update name/email (email requires `current_password`) |
 | PUT | `/api/auth/password` | ✓ | Change password (revokes all other sessions) |
+| DELETE | `/api/auth/account` | ✓ | Delete account and all data permanently |
 
 ### Events
 | Method | Endpoint | Description |
