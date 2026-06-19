@@ -29,7 +29,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => false],
             'token' => $token,
         ], 201);
     }
@@ -52,7 +52,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => $user->google_id !== null],
             'token' => $token,
         ]);
     }
@@ -66,6 +66,15 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        return response()->json($request->user());
+        $user = $request->user();
+
+        return response()->json([
+            'id'         => $user->id,
+            'name'       => $user->name,
+            'email'      => $user->email,
+            'plan'       => $user->plan,
+            'has_google' => $user->google_id !== null,
+            'created_at' => $user->created_at,
+        ]);
     }
 }
