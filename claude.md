@@ -68,6 +68,7 @@
 - Sanctum token expiration: 30 days (`SANCTUM_TOKEN_EXPIRATION` env, default 43200 min)
 - Password reset with custom SPA redirect URL
 - Google OAuth sign-in (Laravel Socialite) — links to existing email/password accounts
+- Account settings page (`/settings`): update name/email (email requires password confirmation), change password (revokes other sessions), connected accounts (Google link status)
 - Professional landing page with product screenshot mockup (Hero, Features, How it works, Pricing, CTA)
 - 404 page in Vue router
 
@@ -79,7 +80,7 @@ Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`).
 php artisan test
 ```
 
-**76 tests, 173 assertions. Always run before reporting a task complete. Never suppress failures.**
+**81 tests, 186 assertions. Always run before reporting a task complete. Never suppress failures.**
 
 Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`
 

@@ -55,11 +55,16 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - **Password reset** — customized URL pointing to `/reset-password/:token` in the SPA
 - All email via Resend; all notification jobs queued
 
-### Authentication
+### Authentication & Account Management
 - Email/password registration and login
 - **Google Sign-In** (OAuth 2.0 via Laravel Socialite) — "Continue with Google" on login and register pages
 - Existing email/password accounts automatically linked when signing in with Google for the first time
 - Sanctum Bearer tokens, 30-day expiration
+- **Account settings** (`/settings`):
+  - Update display name
+  - Update email (requires current password confirmation)
+  - Change password (invalidates all other active sessions)
+  - View Google account link status
 
 ### Access Control & Limits
 | Plan | Guest limit | Active events |
@@ -161,8 +166,8 @@ Tests run against SQLite in-memory — no external services required.
 php artisan test
 ```
 
-**76 tests, 173 assertions** across:
-- `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling)
+**81 tests, 186 assertions** across:
+- `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling), profile updates, password change
 - `EventTest` — CRUD, publish/archive state guards, RSVP deadline validation, free tier limits
 - `GuestTest` — guest management, plan limit enforcement, CSV export, invitations
 - `RsvpTest` — RSVP flow, preferences, plus-ones, deadline enforcement, host notifications
@@ -250,6 +255,8 @@ All API routes are under `/api/`. Authenticated endpoints require `Authorization
 | POST | `/api/auth/reset-password` | — | Reset with token |
 | GET | `/auth/google/redirect` | — | Redirect to Google OAuth (web route) |
 | GET | `/auth/google/callback` | — | Google OAuth callback → token → SPA redirect (web route) |
+| PUT | `/api/auth/profile` | ✓ | Update name/email (email requires `current_password`) |
+| PUT | `/api/auth/password` | ✓ | Change password (revokes all other sessions) |
 
 ### Events
 | Method | Endpoint | Description |
