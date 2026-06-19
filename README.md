@@ -69,7 +69,7 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - Sanctum token expiration: 30 days (configurable via `SANCTUM_TOKEN_EXPIRATION`)
 - App.vue loading gate prevents unauthenticated flash while session is being verified
 - CORS restricted to `APP_URL`
-- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`
+- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security` (HTTPS only)
 - Global 401 interceptor in the SPA → clears session and redirects to login
 - State guards on all status transitions
 - DB indexes on `events(status)`, `events(user_id, status)`, `guests(rsvp_status)`, `guests(event_id, rsvp_status)`, `guests(email)`, `guests(invited_at)`
@@ -199,6 +199,18 @@ killasgroup=true
 redirect_stderr=true
 stdout_logfile=/path/to/storage/logs/worker.log
 ```
+
+### Scheduled Tasks
+
+The scheduler runs cleanup jobs. Add a cron entry to run the Laravel scheduler every minute:
+
+```cron
+* * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
+```
+
+Jobs scheduled:
+- `sanctum:prune-expired` — daily, removes expired tokens
+- `queue:prune-failed` — weekly, purges failed jobs older than 7 days
 
 ### Stripe Webhooks
 

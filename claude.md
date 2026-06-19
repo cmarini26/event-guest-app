@@ -56,7 +56,7 @@
 - Stripe Event Pass checkout + webhook verification
 - Free tier enforcement (3 active events, 50 guests)
 - Rate limiting: auth (5–10/min), RSVP (60/min), authenticated API (120/min)
-- Security headers middleware (`SecureHeaders`)
+- Security headers middleware (`SecureHeaders`): X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS (HTTPS only)
 - CORS restricted to `APP_URL`
 - DB performance indexes
 - Global 401 interceptor in Vue SPA
@@ -107,4 +107,5 @@ php artisan storage:link
 ```
 
 Queue worker via Supervisor (`queue:work database --tries=3`).
+Scheduler cron: `* * * * * php artisan schedule:run` — runs daily token prune + weekly failed-job prune.
 Stripe webhook: `https://yourdomain.com/api/webhooks/stripe` → event: `checkout.session.completed`.
