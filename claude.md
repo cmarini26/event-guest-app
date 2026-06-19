@@ -55,12 +55,15 @@
 - Bulk invite (single bulk UPDATE, not N+1)
 - Stripe Event Pass checkout + webhook verification
 - Free tier enforcement (3 active events, 50 guests)
-- Rate limiting: auth (5–10/min), RSVP (60/min)
+- Rate limiting: auth (5–10/min), RSVP (60/min), authenticated API (120/min)
 - Security headers middleware (`SecureHeaders`)
 - CORS restricted to `APP_URL`
 - DB performance indexes
 - Global 401 interceptor in Vue SPA
 - Full error handling on all Vue pages
+- Open redirect protection on login `?redirect=` param
+- App.vue loading gate (`auth.ready`) prevents white flash on page load
+- Sanctum token expiration: 30 days (`SANCTUM_TOKEN_EXPIRATION` env, default 43200 min)
 - Password reset with custom SPA redirect URL
 - Professional landing page (Hero, Features, How it works, Pricing, CTA)
 - 404 page in Vue router

@@ -9,5 +9,6 @@ onMounted(() => auth.fetchUser());
 </script>
 
 <template>
-    <RouterView />
+    <div v-if="!auth.ready" class="min-h-screen bg-white" />
+    <RouterView v-else />
 </template>

@@ -26,7 +26,7 @@ Route::middleware('throttle:60,1')->group(function () {
 // Stripe delivers webhooks without auth — must be outside the Sanctum group
 Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle']);
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::apiResource('events', EventController::class);
     Route::post('events/{event}/publish', [EventController::class, 'publish']);
     Route::post('events/{event}/archive', [EventController::class, 'archive']);

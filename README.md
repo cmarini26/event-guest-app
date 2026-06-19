@@ -64,7 +64,10 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 | business | unlimited | unlimited |
 
 ### Security & Hardening
-- Rate limiting: auth endpoints (5–10 req/min), RSVP (60 req/min)
+- Rate limiting: auth endpoints (5–10 req/min), RSVP (60 req/min), authenticated API (120 req/min)
+- Open redirect protection: `?redirect=` parameter on login is validated as a relative path
+- Sanctum token expiration: 30 days (configurable via `SANCTUM_TOKEN_EXPIRATION`)
+- App.vue loading gate prevents unauthenticated flash while session is being verified
 - CORS restricted to `APP_URL`
 - Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`
 - Global 401 interceptor in the SPA → clears session and redirects to login
@@ -121,6 +124,9 @@ MAIL_FROM_ADDRESS=noreply@yourdomain.com
 STRIPE_KEY=pk_test_xxxxxxxxxxxx
 STRIPE_SECRET=sk_test_xxxxxxxxxxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
+
+# Optional: Sanctum token lifetime in minutes (default 43200 = 30 days)
+SANCTUM_TOKEN_EXPIRATION=43200
 ```
 
 ### Queue Worker

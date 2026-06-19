@@ -17,7 +17,8 @@ async function submit() {
     errors.value = {};
     const result = await auth.login(email.value, password.value);
     if (result.ok) {
-        const redirect = route.query.redirect ?? '/dashboard';
+        const raw = route.query.redirect;
+        const redirect = raw && raw.startsWith('/') && !raw.startsWith('//') ? raw : '/dashboard';
         router.push(redirect);
     } else {
         errors.value = result.errors;
