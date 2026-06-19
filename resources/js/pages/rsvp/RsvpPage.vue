@@ -74,9 +74,10 @@ async function submit() {
 
 function formatDate(d, tz) {
     if (!d) return '';
-    const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
-    if (tz) opts.timeZone = tz;
-    return new Date(d).toLocaleString('en-US', opts);
+    // Display in UTC (wall-clock time) — see EventDetailPage for rationale.
+    const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' };
+    const formatted = new Date(d).toLocaleString('en-US', opts);
+    return tz ? `${formatted} (${tz})` : formatted;
 }
 </script>
 

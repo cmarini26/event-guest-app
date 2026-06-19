@@ -43,9 +43,12 @@ const stats = computed(() => ({
 
 function formatDateTime(d, tz) {
     if (!d) return '—';
-    const opts = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
-    if (tz) opts.timeZone = tz;
-    return new Date(d).toLocaleString('en-US', opts);
+    // Display in UTC (wall-clock time) + append timezone as a label.
+    // starts_at is stored as the raw value the host entered (UTC app timezone),
+    // so UTC display gives the intended wall-clock time.
+    const opts = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: 'UTC' };
+    const formatted = new Date(d).toLocaleString('en-US', opts);
+    return tz ? `${formatted} (${tz})` : formatted;
 }
 
 const guestLimit = computed(() => {
@@ -170,9 +173,13 @@ function dismissPaymentBanner() {
     router.replace({ query: {} });
 }
 
-function copyRsvpLink(guest) {
+async function copyRsvpLink(guest) {
     const url = `${window.location.origin}/rsvp/${guest.rsvp_token}`;
-    navigator.clipboard.writeText(url);
+    try {
+        await navigator.clipboard.writeText(url);
+    } catch {
+        prompt('Copy this RSVP link:', url);
+    }
 }
 
 async function exportCsv() {
@@ -236,9 +243,7 @@ onMounted(load);
                 <h1 class="text-2xl font-bold text-gray-900">{{ event.name }}</h1>
                 <p v-if="event.venue_name" class="text-sm text-gray-500 mt-1">{{ event.venue_name }}</p>
                 <p class="text-sm text-gray-500 mt-0.5">
-                    {{ formatDateTime(event.starts_at, event.timezone) }}
-                    <template v-if="event.ends_at"> – {{ formatDateTime(event.ends_at, event.timezone) }}</template>
-                    <span v-if="event.timezone" class="text-xs text-gray-400 ml-1">({{ event.timezone }})</span>
+                    {{ formatDateTime(event.starts_at, event.timezone) }}<template v-if="event.ends_at"> – {{ formatDateTime(event.ends_at, null) }}</template>
                 </p>
 
                 <!-- Event Pass badge -->

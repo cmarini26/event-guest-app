@@ -8,6 +8,8 @@ const route = useRoute();
 const router = useRouter();
 const eventsStore = useEventsStore();
 
+const timezones = Intl.supportedValuesOf('timeZone');
+
 const form = ref(null);
 const errors = ref({});
 const submitError = ref('');
@@ -23,7 +25,7 @@ onMounted(async () => {
             description: data.description ?? '',
             starts_at: data.starts_at ? data.starts_at.slice(0, 16) : '',
             ends_at: data.ends_at ? data.ends_at.slice(0, 16) : '',
-            timezone: data.timezone,
+            timezone: data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
             venue_name: data.venue_name ?? '',
             venue_address: data.venue_address ?? '',
             max_guests: data.max_guests ?? '',
@@ -95,6 +97,14 @@ async function submit() {
                     <input v-model="form.ends_at" type="datetime-local"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+                <select v-model="form.timezone"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white">
+                    <option v-for="tz in timezones" :key="tz" :value="tz">{{ tz }}</option>
+                </select>
             </div>
 
             <div>

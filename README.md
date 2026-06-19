@@ -24,7 +24,8 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 ## Features
 
 ### Event Management
-- Create events with name, description, venue, start/end times, timezone
+- Create events with name, description, venue, start/end times, and timezone (selectable from full IANA timezone list)
+- Event times stored as wall-clock time; displayed with timezone label in the dashboard, RSVP page, and guest emails
 - Status lifecycle: **draft → published → archived**
 - Per-event RSVP deadline with automatic close enforcement
 - Per-event guest cap (`max_guests`) layered on top of plan limit

@@ -10,6 +10,7 @@ const email = ref('');
 const password = ref('');
 const password_confirmation = ref('');
 const error = ref('');
+const fieldErrors = ref({});
 const loading = ref(false);
 
 onMounted(() => {
@@ -18,6 +19,7 @@ onMounted(() => {
 
 async function submit() {
     error.value = '';
+    fieldErrors.value = {};
     loading.value = true;
     try {
         await axios.post('/api/auth/reset-password', {
@@ -28,7 +30,10 @@ async function submit() {
         });
         router.push({ name: 'login', query: { reset: '1' } });
     } catch (err) {
-        error.value = err.response?.data?.message ?? 'Something went wrong.';
+        fieldErrors.value = err.response?.data?.errors ?? {};
+        if (!Object.keys(fieldErrors.value).length) {
+            error.value = err.response?.data?.message ?? 'Something went wrong.';
+        }
     } finally {
         loading.value = false;
     }
@@ -62,6 +67,8 @@ async function submit() {
                         required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                     />
+                    <p class="mt-1 text-xs text-gray-400">Min 8 characters, must include letters and numbers.</p>
+                    <p v-if="fieldErrors.password" class="mt-1 text-sm text-red-600">{{ fieldErrors.password[0] }}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
