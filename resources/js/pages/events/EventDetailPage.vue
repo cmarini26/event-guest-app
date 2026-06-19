@@ -152,8 +152,8 @@ async function publish() {
 async function archive() {
     if (!confirm('Archive this event? Guests will no longer be able to RSVP.')) return;
     try {
-        await axios.post(`/api/events/${event.value.id}/archive`);
-        event.value.status = 'archived';
+        const updated = await eventsStore.archiveEvent(event.value.id);
+        event.value = { ...event.value, ...updated };
     } catch (err) {
         alert(err.response?.data?.message ?? 'Failed to archive event.');
     }

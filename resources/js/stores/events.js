@@ -45,5 +45,12 @@ export const useEventsStore = defineStore('events', () => {
         return data;
     }
 
-    return { events, loading, fetchError, fetchEvents, createEvent, updateEvent, deleteEvent, publishEvent };
+    async function archiveEvent(id) {
+        const { data } = await axios.post(`/api/events/${id}/archive`);
+        const i = events.value.findIndex(e => e.id === id);
+        if (i !== -1) events.value[i] = data;
+        return data;
+    }
+
+    return { events, loading, fetchError, fetchEvents, createEvent, updateEvent, deleteEvent, publishEvent, archiveEvent };
 });
