@@ -1,51 +1,81 @@
-# Event & Guest Management SaaS
+# guestlist. — Event & Guest Management SaaS
 
-**Stack:** Laravel 13, Vue 3 SPA (decoupled), PostgreSQL, Sanctum token auth, Cashier/Stripe, Resend email
+**Stack:** Laravel 13, Vue 3 SPA (decoupled), PostgreSQL, Sanctum Bearer token auth, Cashier/Stripe, Resend email
 
 **No ticketing. No attendee payments. Ever.**
 
 ## Architecture
 
 - Vue 3 SPA talks to Laravel via `/api/*` with Bearer token auth (Sanctum)
-- Web catch-all serves `resources/views/app.blade.php` (SPA shell)
-- API routes registered in `bootstrap/app.php` via `api:` key
+- Web catch-all (`Route::fallback()`) serves `resources/views/app.blade.php` (SPA shell)
+- API routes registered in `bootstrap/app.php` via `api:` key — this key MUST remain or all API routes return 405
 - Email: Resend (`MAIL_MAILER=resend`, `RESEND_API_KEY=` in `.env`)
-- Payments: Laravel Cashier + Stripe (per-event and subscriptions)
-- Queue: database (local), will upgrade to Redis + Horizon before production
+- Payments: Laravel Cashier + Stripe — Event Pass only ($19/event one-time, `checkoutCharge()`)
+- Queue: database driver (`QUEUE_CONNECTION=database`) — adequate for current volume
+- Password reset URL customized in `AppServiceProvider` to point to `/reset-password/:token` in the SPA
 
-## Key models
+## Key Models
 
 | Model | Purpose |
 |-------|---------|
-| `User` | Host. Has `plan` (free/event_pass/pro/business), Cashier, HasApiTokens |
-| `Event` | Belongs to User. Has slug, status (draft/published/archived), RSVP settings |
-| `Guest` | Belongs to Event. Has unique `rsvp_token`, `rsvp_status`, preferences |
-| `PlusOne` | Belongs to Guest |
+| `User` | Host. Has `plan` (free/event_pass/pro/business), Cashier, HasApiTokens, Notifiable |
+| `Event` | Belongs to User. Has slug, status (draft/published/archived), RSVP settings, `event_pass_paid_at` |
+| `Guest` | Belongs to Event. Has unique UUID `rsvp_token`, `rsvp_status` (pending/attending/declined/waitlisted), preferences |
+| `PlusOne` | Belongs to Guest. Has name, dietary_preference |
 
-## Pricing / guest limits
+## Plan Limits
 
-| Plan | Guest limit | Event limit |
-|------|------------|-------------|
-| free | 50 | 3 active |
-| event_pass | 300 | unlimited |
+| Plan | Guest limit | Active events |
+|------|------------|---------------|
+| free | 50 | 3 |
+| event_pass | 300 (per event that purchased the pass) | unlimited |
 | pro | unlimited | unlimited |
 | business | unlimited | unlimited |
 
-## Build phases
+`User::guestLimit()` returns the plan-level limit. `Event::effectiveGuestLimit()` takes `min(planLimit, event.max_guests)` with null-safety for unlimited plans.
 
-- **Phase 1 (active):** Event CRUD, guest management, RSVP flow, plus-ones, preferences, email invitations, free tier enforcement
-- **Phase 2:** Pro/Business tiers, sub-event logic, attachment support, analytics, custom domains
-- **Phase 3:** White-label, API tier, Capacitor mobile
+## Build Status
+
+- **Phase 1: COMPLETE** — all features implemented, production-hardened, 72 tests passing
+- **Phase 2: NOT STARTED** — Pro/Business subscriptions, sub-events, analytics, custom domains
+- **Phase 3: NOT STARTED** — White-label, API tier, Capacitor mobile
+
+## Implemented Features (Phase 1)
+
+- Event CRUD with status lifecycle (draft → published → archived)
+- State guards: publish only from draft, archive rejects already-archived
+- RSVP deadline cross-validation (must be before `starts_at`)
+- Guest management with CSV export
+- RSVP flow: unique token per guest, no guest login required
+- Plus-ones with dietary preferences
+- Preference collection: dietary, accessibility, seating, phone
+- Automatic waitlisting when `isAtCapacity()` is true
+- Email invitations (queued via `GuestInvitation` notification)
+- Host RSVP notifications (queued via `RsvpReceived` notification)
+- Bulk invite (single bulk UPDATE, not N+1)
+- Stripe Event Pass checkout + webhook verification
+- Free tier enforcement (3 active events, 50 guests)
+- Rate limiting: auth (5–10/min), RSVP (60/min)
+- Security headers middleware (`SecureHeaders`)
+- CORS restricted to `APP_URL`
+- DB performance indexes
+- Global 401 interceptor in Vue SPA
+- Full error handling on all Vue pages
+- Password reset with custom SPA redirect URL
+- Professional landing page (Hero, Features, How it works, Pricing, CTA)
+- 404 page in Vue router
 
 ## Testing
 
-Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`). Run tests with:
+Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`).
 
-```
+```bash
 php artisan test
 ```
 
-**Always run tests before reporting a task complete. Never suppress failures.**
+**72 tests, 161 assertions. Always run before reporting a task complete. Never suppress failures.**
+
+Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`
 
 ## Development Workflow
 
@@ -53,3 +83,25 @@ php artisan test
 - Draft a plan for approval before complex refactors
 - Never add Phase 2+ features while Phase 1 is incomplete
 - Prefer editing existing files to creating new ones
+- Run `php artisan test` before every task completion
+
+## Key Technical Notes
+
+- `Route::fallback()` (not `Route::get('/{any}')`) is required for the SPA catch-all — the fallback flag defers matching so API routes win
+- `abort_unless` in controllers returns JSON when `X-Requested-With: XMLHttpRequest` is set (Axios sets this automatically)
+- `effectiveGuestLimit()` on Event uses `$this->user?->guestLimit()` with nullable-safe chaining — `user` may not be loaded
+- Stripe webhook endpoint at `/api/webhooks/stripe` is outside the Sanctum middleware group (public)
+- `GuestInvitation` and `RsvpReceived` both implement `ShouldQueue` — start `php artisan queue:work` in dev
+
+## Deployment Quick Reference
+
+```bash
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan migrate --force
+php artisan optimize
+php artisan storage:link
+```
+
+Queue worker via Supervisor (`queue:work database --tries=3`).
+Stripe webhook: `https://yourdomain.com/api/webhooks/stripe` → event: `checkout.session.completed`.

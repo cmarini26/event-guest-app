@@ -15,8 +15,8 @@ async function logout() {
     <div class="min-h-screen bg-gray-50">
         <nav class="bg-white border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <RouterLink :to="{ name: 'dashboard' }" class="text-lg font-semibold text-gray-900">
-                    Event App
+                <RouterLink :to="{ name: 'dashboard' }" class="font-bold text-gray-900 text-lg tracking-tight">
+                    guestlist<span class="text-indigo-600">.</span>
                 </RouterLink>
                 <div class="flex items-center gap-4">
                     <span class="text-sm text-gray-600">{{ auth.user?.name }}</span>

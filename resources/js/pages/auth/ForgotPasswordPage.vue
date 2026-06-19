@@ -26,6 +26,9 @@ async function submit() {
 <template>
     <div class="min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-sm">
+            <RouterLink :to="{ name: 'home' }" class="block text-center font-bold text-gray-900 text-xl tracking-tight mb-8">
+                guestlist<span class="text-indigo-600">.</span>
+            </RouterLink>
             <h1 class="text-2xl font-bold text-gray-900 mb-2 text-center">Forgot your password?</h1>
             <p class="text-sm text-gray-500 text-center mb-8">
                 Enter your email and we'll send a reset link.

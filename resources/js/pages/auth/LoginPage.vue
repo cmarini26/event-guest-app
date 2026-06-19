@@ -28,6 +28,9 @@ async function submit() {
 <template>
     <div class="min-h-screen flex items-center justify-center px-4">
         <div class="w-full max-w-sm">
+            <RouterLink :to="{ name: 'home' }" class="block text-center font-bold text-gray-900 text-xl tracking-tight mb-8">
+                guestlist<span class="text-indigo-600">.</span>
+            </RouterLink>
             <h1 class="text-2xl font-bold text-gray-900 mb-8 text-center">Sign in</h1>
 
             <div v-if="justReset" class="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-700">
