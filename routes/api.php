@@ -27,6 +27,8 @@ Route::middleware('throttle:60,1')->group(function () {
 Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle']);
 
 Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
+    Route::put('auth/profile', [AuthController::class, 'updateProfile']);
+    Route::put('auth/password', [AuthController::class, 'updatePassword']);
     Route::apiResource('events', EventController::class);
     Route::post('events/{event}/publish', [EventController::class, 'publish']);
     Route::post('events/{event}/archive', [EventController::class, 'archive']);

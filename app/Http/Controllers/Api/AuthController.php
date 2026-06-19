@@ -77,4 +77,57 @@ class AuthController extends Controller
             'created_at' => $user->created_at,
         ]);
     }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'name'  => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+        ]);
+
+        if ($data['email'] !== $user->email) {
+            $request->validate([
+                'current_password' => ['required', function ($attr, $value, $fail) use ($user) {
+                    if (! Hash::check($value, $user->password)) {
+                        $fail('Current password is incorrect.');
+                    }
+                }],
+            ]);
+        }
+
+        $user->update($data);
+
+        return response()->json([
+            'id'         => $user->id,
+            'name'       => $user->name,
+            'email'      => $user->email,
+            'plan'       => $user->plan,
+            'has_google' => $user->google_id !== null,
+            'created_at' => $user->created_at,
+        ]);
+    }
+
+    public function updatePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'current_password' => ['required', function ($attr, $value, $fail) use ($user) {
+                if (! Hash::check($value, $user->password)) {
+                    $fail('Current password is incorrect.');
+                }
+            }],
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        // Revoke all tokens except the current one so other sessions are invalidated
+        $currentId = $user->currentAccessToken()?->id;
+        $user->tokens()->when($currentId, fn ($q) => $q->where('id', '!=', $currentId))->delete();
+
+        return response()->json(['message' => 'Password updated.']);
+    }
 }

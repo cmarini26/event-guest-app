@@ -21,6 +21,7 @@ const routes = [
         meta: { requiresAuth: true },
         children: [
             { path: '', name: 'dashboard', component: () => import('@/pages/events/DashboardPage.vue') },
+            { path: '/settings', name: 'settings', component: () => import('@/pages/AccountSettingsPage.vue') },
             { path: '/events/create', name: 'events.create', component: () => import('@/pages/events/CreateEventPage.vue') },
             { path: '/events/:id', name: 'events.show', component: () => import('@/pages/events/EventDetailPage.vue') },
             { path: '/events/:id/edit', name: 'events.edit', component: () => import('@/pages/events/EditEventPage.vue') },

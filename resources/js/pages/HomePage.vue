@@ -214,7 +214,7 @@ const plans = [
                     <!-- App shell -->
                     <div class="bg-gray-50 flex" style="height: 440px;">
                         <!-- Sidebar nav -->
-                        <div class="w-52 bg-white border-r border-gray-100 p-4 shrink-0">
+                        <div class="relative w-52 bg-white border-r border-gray-100 p-4 shrink-0">
                             <div class="font-bold text-gray-900 text-base mb-6">
                                 guestlist<span class="text-indigo-600">.</span>
                             </div>

@@ -19,7 +19,9 @@ async function logout() {
                     guestlist<span class="text-indigo-600">.</span>
                 </RouterLink>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm text-gray-600">{{ auth.user?.name }}</span>
+                    <RouterLink :to="{ name: 'settings' }" class="text-sm text-gray-600 hover:text-gray-900">
+                        {{ auth.user?.name }}
+                    </RouterLink>
                     <button @click="logout" class="text-sm text-gray-500 hover:text-gray-900">
                         Sign out
                     </button>

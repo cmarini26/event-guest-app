@@ -144,6 +144,74 @@ class AuthTest extends TestCase
         $this->assertCount(1, User::where('google_id', 'google-uid-789')->get());
     }
 
+    public function test_user_can_update_profile_name(): void
+    {
+        $user = User::factory()->create(['name' => 'Old Name']);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson('/api/auth/profile', ['name' => 'New Name', 'email' => $user->email])
+            ->assertOk()
+            ->assertJsonFragment(['name' => 'New Name']);
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'name' => 'New Name']);
+    }
+
+    public function test_user_can_update_email_with_correct_password(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('password123')]);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson('/api/auth/profile', [
+                'name' => $user->name,
+                'email' => 'new@example.com',
+                'current_password' => 'password123',
+            ])
+            ->assertOk()
+            ->assertJsonFragment(['email' => 'new@example.com']);
+    }
+
+    public function test_email_change_requires_current_password(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson('/api/auth/profile', [
+                'name' => $user->name,
+                'email' => 'different@example.com',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('current_password');
+    }
+
+    public function test_user_can_change_password(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('oldPass1')]);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson('/api/auth/password', [
+                'current_password' => 'oldPass1',
+                'password' => 'newPass2',
+                'password_confirmation' => 'newPass2',
+            ])
+            ->assertOk();
+
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newPass2', $user->fresh()->password));
+    }
+
+    public function test_password_change_rejects_wrong_current_password(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('correct1')]);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson('/api/auth/password', [
+                'current_password' => 'wrong123',
+                'password' => 'newPass2',
+                'password_confirmation' => 'newPass2',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('current_password');
+    }
+
     public function test_google_callback_redirects_on_error(): void
     {
         $provider = Mockery::mock('Laravel\Socialite\Contracts\Provider');
