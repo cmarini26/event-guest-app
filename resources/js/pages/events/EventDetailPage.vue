@@ -17,6 +17,7 @@ const loadError = ref(null);
 const guestLoading = ref(false);
 const inviting = ref(null);
 const bulkInviting = ref(false);
+const bulkInviteResult = ref('');
 const checkoutLoading = ref(false);
 
 const newGuest = ref({ first_name: '', last_name: '', email: '', phone: '' });
@@ -129,9 +130,10 @@ async function sendInvite(guest) {
 
 async function bulkInvite() {
     bulkInviting.value = true;
+    bulkInviteResult.value = '';
     try {
         const { data } = await axios.post(`/api/events/${route.params.id}/guests/bulk-invite`);
-        alert(data.message);
+        bulkInviteResult.value = data.message;
         await load();
     } finally {
         bulkInviting.value = false;
@@ -344,6 +346,12 @@ onMounted(load);
                         + Add guest
                     </button>
                 </div>
+            </div>
+
+            <!-- Bulk invite result -->
+            <div v-if="bulkInviteResult" class="px-5 py-3 border-b border-gray-100 bg-green-50 flex items-center justify-between">
+                <p class="text-sm text-green-700">{{ bulkInviteResult }}</p>
+                <button @click="bulkInviteResult = ''" class="text-green-600 hover:text-green-800 text-sm leading-none ml-4">✕</button>
             </div>
 
             <!-- Add guest form -->
