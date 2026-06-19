@@ -1,2 +1,9 @@
 User-agent: *
-Disallow:
+Disallow: /dashboard
+Disallow: /events
+Disallow: /settings
+Disallow: /auth/
+Disallow: /rsvp/
+Allow: /
+Allow: /privacy
+Allow: /terms

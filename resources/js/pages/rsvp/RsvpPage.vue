@@ -72,11 +72,11 @@ async function submit() {
     }
 }
 
-function formatDate(d) {
+function formatDate(d, tz) {
     if (!d) return '';
-    return new Date(d).toLocaleDateString('en-US', {
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit',
-    });
+    const opts = { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+    if (tz) opts.timeZone = tz;
+    return new Date(d).toLocaleString('en-US', opts);
 }
 </script>
 
@@ -98,7 +98,7 @@ function formatDate(d) {
                 <h1 class="text-2xl font-bold text-gray-900 mb-3">{{ submitResult.message }}</h1>
                 <p class="text-gray-600">{{ event.name }}</p>
                 <p v-if="event.starts_at && submitResult.status === 'attending'" class="text-sm text-gray-500 mt-1">
-                    {{ formatDate(event.starts_at) }}
+                    {{ formatDate(event.starts_at, event.timezone) }}
                 </p>
             </div>
         </div>
@@ -107,7 +107,7 @@ function formatDate(d) {
             <!-- Event header -->
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
                 <h1 class="text-2xl font-bold text-gray-900 mb-2">{{ event.name }}</h1>
-                <p v-if="event.starts_at" class="text-sm text-gray-500 mb-1">{{ formatDate(event.starts_at) }}</p>
+                <p v-if="event.starts_at" class="text-sm text-gray-500 mb-1">{{ formatDate(event.starts_at, event.timezone) }}</p>
                 <p v-if="event.venue_name" class="text-sm text-gray-500">{{ event.venue_name }}</p>
                 <p v-if="event.venue_address" class="text-sm text-gray-400">{{ event.venue_address }}</p>
                 <p v-if="event.description" class="mt-3 text-sm text-gray-700">{{ event.description }}</p>
@@ -115,7 +115,7 @@ function formatDate(d) {
                     This event is currently at capacity. You may be added to the waitlist.
                 </p>
                 <p v-if="event.rsvp_deadline && !rsvpClosed" class="mt-3 text-xs text-gray-400">
-                    RSVP by {{ formatDate(event.rsvp_deadline) }}
+                    RSVP by {{ formatDate(event.rsvp_deadline, event.timezone) }}
                 </p>
             </div>
 

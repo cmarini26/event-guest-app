@@ -184,6 +184,26 @@ async function deleteAccount() {
             </div>
         </section>
 
+        <!-- Plan -->
+        <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-4">Plan</h2>
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-gray-900 capitalize">
+                        {{ auth.user?.plan?.replace('_', ' ') ?? 'free' }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        <template v-if="auth.user?.plan === 'free'">50 guests · 3 active events</template>
+                        <template v-else-if="auth.user?.plan === 'event_pass'">300 guests per pass · Unlimited events</template>
+                        <template v-else>Unlimited guests · Unlimited events</template>
+                    </p>
+                </div>
+                <span v-if="auth.user?.plan === 'free'" class="text-xs text-indigo-600 font-medium">
+                    Pro plan coming soon
+                </span>
+            </div>
+        </section>
+
         <!-- Danger zone -->
         <section class="rounded-xl border border-red-200 p-6">
             <h2 class="text-base font-semibold text-red-700 mb-1">Danger zone</h2>

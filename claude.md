@@ -72,6 +72,12 @@
 - Privacy Policy (`/privacy`) and Terms of Service (`/terms`) — required for production launch
 - Professional landing page with product screenshot mockup (Hero, Features, How it works, Pricing, CTA)
 - 404 page in Vue router
+- Event date/time shown in event's own timezone in host view, RSVP page, and guest invitation emails
+- EventDetailPage stats grid shows all 5 states: total, attending, declined, pending, waitlisted
+- Guest management actions (Invite, Invite all, Add guest) hidden on archived events
+- AccountSettingsPage shows current plan with limits
+- `X-Frame-Options: DENY` (stricter than SAMEORIGIN)
+- `robots.txt` blocks /dashboard, /events, /settings, /auth/, /rsvp/ from indexing
 
 ## Testing
 

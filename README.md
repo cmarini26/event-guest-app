@@ -35,6 +35,8 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - Add guests individually with first name, last name, email, phone
 - Unique RSVP token per guest (UUID v4) — no guest login required
 - Track per-guest: `rsvp_status` (pending / attending / declined / waitlisted), `responded_at`, `invited_at`
+- Dashboard stats show all 5 RSVP states: total, attending, declined, pending, waitlisted
+- Guest management actions (invite, bulk invite, add guest) are hidden when an event is archived
 - Export full guest list to CSV (includes preferences and plus-ones)
 - Bulk invite all uninvited guests with email in one click
 - Authorization scoped: guests are always verified to belong to the requested event
@@ -50,7 +52,7 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - Host receives email notification on every RSVP response
 
 ### Email
-- **Invitation email** — personalized per guest, contains unique RSVP link
+- **Invitation email** — personalized per guest, contains unique RSVP link; date shown in the event's timezone
 - **Host RSVP notification** — sent to event owner when a guest responds
 - **Password reset** — customized URL pointing to `/reset-password/:token` in the SPA
 - All email via Resend; all notification jobs queued
@@ -85,10 +87,11 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - Sanctum token expiration: 30 days (configurable via `SANCTUM_TOKEN_EXPIRATION`)
 - App.vue loading gate prevents unauthenticated flash while session is being verified
 - CORS restricted to `APP_URL`
-- Security headers: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security` (HTTPS only)
+- Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security` (HTTPS only)
 - Global 401 interceptor in the SPA → clears session and redirects to login
 - State guards on all status transitions
 - DB indexes on `events(status)`, `events(user_id, status)`, `guests(rsvp_status)`, `guests(event_id, rsvp_status)`, `guests(email)`, `guests(invited_at)`
+- `robots.txt` allows public pages only; blocks `/dashboard`, `/events`, `/settings`, `/auth/`, `/rsvp/` from crawlers
 
 ---
 

@@ -38,7 +38,15 @@ const stats = computed(() => ({
     attending: guests.value.filter(g => g.rsvp_status === 'attending').length,
     declined: guests.value.filter(g => g.rsvp_status === 'declined').length,
     pending: guests.value.filter(g => g.rsvp_status === 'pending').length,
+    waitlisted: guests.value.filter(g => g.rsvp_status === 'waitlisted').length,
 }));
+
+function formatDateTime(d, tz) {
+    if (!d) return '—';
+    const opts = { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+    if (tz) opts.timeZone = tz;
+    return new Date(d).toLocaleString('en-US', opts);
+}
 
 const guestLimit = computed(() => {
     if (!event.value) return null;
@@ -227,6 +235,11 @@ onMounted(load);
                 </div>
                 <h1 class="text-2xl font-bold text-gray-900">{{ event.name }}</h1>
                 <p v-if="event.venue_name" class="text-sm text-gray-500 mt-1">{{ event.venue_name }}</p>
+                <p class="text-sm text-gray-500 mt-0.5">
+                    {{ formatDateTime(event.starts_at, event.timezone) }}
+                    <template v-if="event.ends_at"> – {{ formatDateTime(event.ends_at, event.timezone) }}</template>
+                    <span v-if="event.timezone" class="text-xs text-gray-400 ml-1">({{ event.timezone }})</span>
+                </p>
 
                 <!-- Event Pass badge -->
                 <span v-if="event.event_pass_paid_at"
@@ -263,7 +276,7 @@ onMounted(load);
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-4 gap-4 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
             <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p class="text-2xl font-bold text-gray-900">{{ stats.total }}</p>
                 <p class="text-xs text-gray-500 mt-1">Total guests</p>
@@ -279,6 +292,10 @@ onMounted(load);
             <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p class="text-2xl font-bold text-gray-500">{{ stats.pending }}</p>
                 <p class="text-xs text-gray-500 mt-1">Pending</p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                <p class="text-2xl font-bold text-amber-600">{{ stats.waitlisted }}</p>
+                <p class="text-xs text-gray-500 mt-1">Waitlisted</p>
             </div>
         </div>
 
@@ -313,11 +330,11 @@ onMounted(load);
                         class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50">
                         Export CSV
                     </button>
-                    <button @click="bulkInvite" :disabled="bulkInviting"
+                    <button v-if="event.status !== 'archived'" @click="bulkInvite" :disabled="bulkInviting"
                         class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50">
                         {{ bulkInviting ? 'Sending...' : 'Invite all' }}
                     </button>
-                    <button @click="addingGuest = true"
+                    <button v-if="event.status !== 'archived'" @click="addingGuest = true"
                         class="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800">
                         + Add guest
                     </button>
@@ -386,15 +403,17 @@ onMounted(load);
                             <td class="px-5 py-3 text-gray-500">{{ guest.plus_ones?.length ?? 0 }}</td>
                             <td class="px-5 py-3 text-right" @click.stop>
                                 <div class="flex gap-2 justify-end">
-                                    <button
-                                        v-if="guest.email && !guest.invited_at"
-                                        @click="sendInvite(guest)"
-                                        :disabled="inviting === guest.id"
-                                        class="text-xs text-blue-600 hover:underline disabled:opacity-50"
-                                    >
-                                        {{ inviting === guest.id ? 'Sending...' : 'Invite' }}
-                                    </button>
-                                    <span v-else-if="guest.invited_at" class="text-xs text-gray-400">Invited</span>
+                                    <template v-if="event.status !== 'archived'">
+                                        <button
+                                            v-if="guest.email && !guest.invited_at"
+                                            @click="sendInvite(guest)"
+                                            :disabled="inviting === guest.id"
+                                            class="text-xs text-blue-600 hover:underline disabled:opacity-50"
+                                        >
+                                            {{ inviting === guest.id ? 'Sending...' : 'Invite' }}
+                                        </button>
+                                        <span v-else-if="guest.invited_at" class="text-xs text-gray-400">Invited</span>
+                                    </template>
                                     <button @click="copyRsvpLink(guest)" class="text-xs text-gray-500 hover:underline">
                                         Copy link
                                     </button>

@@ -27,9 +27,13 @@ class GuestInvitation extends Notification implements ShouldQueue
             ->subject("You're invited to {$this->event->name}")
             ->greeting("Hi {$notifiable->first_name}!")
             ->line("You've been invited to **{$this->event->name}**.")
-            ->when($this->event->starts_at, fn ($mail) => $mail->line(
-                '**Date:** ' . $this->event->starts_at->format('l, F j, Y \a\t g:i A T')
-            ))
+            ->when($this->event->starts_at, function ($mail) {
+                $starts = $this->event->timezone
+                    ? $this->event->starts_at->setTimezone($this->event->timezone)
+                    : $this->event->starts_at;
+                $tzLabel = $this->event->timezone ? " ({$this->event->timezone})" : '';
+                return $mail->line('**Date:** ' . $starts->format('l, F j, Y \a\t g:i A') . $tzLabel);
+            })
             ->when($this->event->venue_name, fn ($mail) => $mail->line(
                 '**Venue:** ' . $this->event->venue_name
             ))
