@@ -34,7 +34,6 @@ class RsvpController extends Controller
                 'timezone' => $guest->event->timezone,
                 'venue_name' => $guest->event->venue_name,
                 'venue_address' => $guest->event->venue_address,
-                'cover_image' => $guest->event->cover_image,
                 'allow_plus_ones' => $guest->event->allow_plus_ones,
                 'max_plus_ones_per_guest' => $guest->event->max_plus_ones_per_guest,
                 'collect_dietary' => $guest->event->collect_dietary,

@@ -6,7 +6,11 @@ import { useEventsStore } from '@/stores/events.js';
 const router = useRouter();
 const eventsStore = useEventsStore();
 
-const timezones = Intl.supportedValuesOf('timeZone');
+const timezones = typeof Intl.supportedValuesOf === 'function'
+    ? Intl.supportedValuesOf('timeZone')
+    : ['UTC', 'America/New_York', 'America/Chicago', 'America/Denver', 'America/Los_Angeles',
+       'America/Sao_Paulo', 'Europe/London', 'Europe/Paris', 'Europe/Berlin', 'Asia/Dubai',
+       'Asia/Kolkata', 'Asia/Singapore', 'Asia/Tokyo', 'Australia/Sydney', 'Pacific/Auckland'];
 
 const form = ref({
     name: '',
