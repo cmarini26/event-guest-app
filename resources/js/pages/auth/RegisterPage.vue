@@ -11,14 +11,17 @@ const email = ref('');
 const password = ref('');
 const password_confirmation = ref('');
 const errors = ref({});
+const generalError = ref('');
 
 async function submit() {
     errors.value = {};
+    generalError.value = '';
     const result = await auth.register(name.value, email.value, password.value, password_confirmation.value);
     if (result.ok) {
         router.push({ name: 'dashboard' });
     } else {
         errors.value = result.errors;
+        generalError.value = result.message ?? '';
     }
 }
 </script>
@@ -53,6 +56,10 @@ async function submit() {
                 </div>
             </div>
 
+            <div v-if="generalError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {{ generalError }}
+            </div>
+
             <form @submit.prevent="submit" class="space-y-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -85,6 +92,7 @@ async function submit() {
                         required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                     />
+                    <p class="mt-1 text-xs text-gray-400">Min 8 characters, must include letters and numbers.</p>
                     <p v-if="errors.password" class="mt-1 text-sm text-red-600">{{ errors.password[0] }}</p>
                 </div>
                 <div>

@@ -49,7 +49,9 @@ export const useAuthStore = defineStore('auth', () => {
             user.value = data.user;
             return { ok: true };
         } catch (err) {
-            return { ok: false, errors: err.response?.data?.errors ?? {} };
+            const errors = err.response?.data?.errors ?? {};
+            const message = Object.keys(errors).length ? '' : (err.response?.data?.message ?? 'Something went wrong. Please try again.');
+            return { ok: false, errors, message };
         } finally {
             loading.value = false;
         }
@@ -65,7 +67,9 @@ export const useAuthStore = defineStore('auth', () => {
             user.value = data.user;
             return { ok: true };
         } catch (err) {
-            return { ok: false, errors: err.response?.data?.errors ?? {} };
+            const errors = err.response?.data?.errors ?? {};
+            const message = Object.keys(errors).length ? '' : (err.response?.data?.message ?? 'Something went wrong. Please try again.');
+            return { ok: false, errors, message };
         } finally {
             loading.value = false;
         }

@@ -10,12 +10,14 @@ const route = useRoute();
 const email = ref('');
 const password = ref('');
 const errors = ref({});
+const generalError = ref('');
 
 const justReset = computed(() => route.query.reset === '1');
 const googleError = computed(() => route.query.error === 'google_failed');
 
 async function submit() {
     errors.value = {};
+    generalError.value = '';
     const result = await auth.login(email.value, password.value);
     if (result.ok) {
         const raw = route.query.redirect;
@@ -23,6 +25,7 @@ async function submit() {
         router.push(redirect);
     } else {
         errors.value = result.errors;
+        generalError.value = result.message ?? '';
     }
 }
 </script>
@@ -62,6 +65,10 @@ async function submit() {
                 <div class="relative flex justify-center">
                     <span class="bg-white px-3 text-xs text-gray-400">or sign in with email</span>
                 </div>
+            </div>
+
+            <div v-if="generalError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+                {{ generalError }}
             </div>
 
             <form @submit.prevent="submit" class="space-y-4">
