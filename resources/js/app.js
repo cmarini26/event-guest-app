@@ -11,17 +11,21 @@ const app = createApp(App);
 app.use(pinia);
 app.use(router);
 
-// Redirect to login on expired token; skip /auth/me (handled by fetchUser)
+// Global response interceptor: 401 → clear session; 429 → annotate error
 axios.interceptors.response.use(
     res => res,
     err => {
         const url = err.config?.url ?? '';
-        if (err.response?.status === 401 && !url.includes('/auth/me') && !url.includes('/auth/login')) {
+        const status = err.response?.status;
+        if (status === 401 && !url.includes('/auth/me') && !url.includes('/auth/login')) {
             const auth = useAuthStore();
             auth.clearSession();
             if (router.currentRoute.value.meta?.requiresAuth) {
                 router.push({ name: 'login' });
             }
+        }
+        if (status === 429 && err.response) {
+            err.response.data = { message: 'Too many requests. Please wait a moment and try again.' };
         }
         return Promise.reject(err);
     }

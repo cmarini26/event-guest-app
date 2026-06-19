@@ -243,6 +243,33 @@ class AuthTest extends TestCase
             ->assertJsonValidationErrors('current_password');
     }
 
+    public function test_google_only_user_can_set_password(): void
+    {
+        $user = User::factory()->create(['password' => null, 'google_id' => 'google-uid-set-pw']);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/auth/set-password', [
+                'password' => 'newPass1',
+                'password_confirmation' => 'newPass1',
+            ])
+            ->assertOk()
+            ->assertJsonFragment(['has_password' => true]);
+
+        $this->assertNotNull($user->fresh()->password);
+    }
+
+    public function test_set_password_rejected_if_user_already_has_password(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('existing1')]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/auth/set-password', [
+                'password' => 'newPass1',
+                'password_confirmation' => 'newPass1',
+            ])
+            ->assertUnprocessable();
+    }
+
     public function test_google_callback_redirects_on_error(): void
     {
         $provider = Mockery::mock('Laravel\Socialite\Contracts\Provider');

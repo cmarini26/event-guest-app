@@ -185,13 +185,17 @@ async function copyRsvpLink(guest) {
 }
 
 async function exportCsv() {
-    const { data } = await axios.get(`/api/events/${route.params.id}/guests/export`, { responseType: 'blob' });
-    const url = URL.createObjectURL(data);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `guests-${event.value.name.replace(/\s+/g, '-').toLowerCase()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+        const { data } = await axios.get(`/api/events/${route.params.id}/guests/export`, { responseType: 'blob' });
+        const url = URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `guests-${event.value.name.replace(/\s+/g, '-').toLowerCase()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch {
+        loadError.value = 'Export failed. Please try again.';
+    }
 }
 
 const expandedGuest = ref(null);

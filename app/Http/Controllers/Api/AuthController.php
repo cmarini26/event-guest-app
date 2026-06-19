@@ -29,7 +29,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => false],
+            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => false, 'has_password' => true],
             'token' => $token,
         ], 201);
     }
@@ -52,7 +52,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => $user->google_id !== null],
+            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => $user->google_id !== null, 'has_password' => $user->password !== null],
             'token' => $token,
         ]);
     }
@@ -131,6 +131,24 @@ class AuthController extends Controller
         $user->tokens()->when($currentId, fn ($q) => $q->where('id', '!=', $currentId))->delete();
 
         return response()->json(['message' => 'Password updated.']);
+    }
+
+    public function setPassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        abort_if($user->password !== null, 422, 'Account already has a password. Use change password instead.');
+
+        $request->validate([
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $user->update(['password' => Hash::make($request->password)]);
+
+        return response()->json([
+            'message'      => 'Password set. You can now sign in with email and password.',
+            'has_password' => true,
+        ]);
     }
 
     public function deleteAccount(Request $request): JsonResponse

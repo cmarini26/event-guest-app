@@ -22,6 +22,11 @@ const passwordErrors = ref({});
 const passwordSuccess = ref('');
 const passwordLoading = ref(false);
 
+const setPasswordForm = reactive({ password: '', password_confirmation: '' });
+const setPasswordErrors = ref({});
+const setPasswordSuccess = ref('');
+const setPasswordLoading = ref(false);
+
 onMounted(() => {
     profile.name = auth.user?.name ?? '';
     profile.email = auth.user?.email ?? '';
@@ -72,6 +77,29 @@ async function savePassword() {
         }
     } finally {
         passwordLoading.value = false;
+    }
+}
+
+async function setPassword() {
+    setPasswordErrors.value = {};
+    setPasswordSuccess.value = '';
+    setPasswordLoading.value = true;
+    try {
+        await axios.post('/api/auth/set-password', {
+            password: setPasswordForm.password,
+            password_confirmation: setPasswordForm.password_confirmation,
+        });
+        auth.user.has_password = true;
+        setPasswordForm.password = '';
+        setPasswordForm.password_confirmation = '';
+        setPasswordSuccess.value = 'Password set. You can now sign in with email and password.';
+    } catch (err) {
+        setPasswordErrors.value = err.response?.data?.errors ?? {};
+        if (!Object.keys(setPasswordErrors.value).length) {
+            setPasswordErrors.value._general = err.response?.data?.message ?? 'Something went wrong.';
+        }
+    } finally {
+        setPasswordLoading.value = false;
     }
 }
 
@@ -182,6 +210,32 @@ async function deleteAccount() {
                 </a>
                 <span v-else class="text-xs text-green-600 font-medium">✓ Active</span>
             </div>
+        </section>
+
+        <!-- Set password (Google-only accounts) -->
+        <section v-if="!auth.user?.has_password" class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-1">Set a password</h2>
+            <p class="text-sm text-gray-500 mb-5">Add email/password sign-in to your account alongside Google.</p>
+            <form @submit.prevent="setPassword" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">New password</label>
+                    <input v-model="setPasswordForm.password" type="password" autocomplete="new-password" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+                    <p class="mt-1 text-xs text-gray-400">Min 8 characters, must include letters and numbers.</p>
+                    <p v-if="setPasswordErrors.password" class="mt-1 text-sm text-red-600">{{ setPasswordErrors.password[0] }}</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
+                    <input v-model="setPasswordForm.password_confirmation" type="password" autocomplete="new-password" required
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+                </div>
+                <p v-if="setPasswordErrors._general" class="text-sm text-red-600">{{ setPasswordErrors._general }}</p>
+                <p v-if="setPasswordSuccess" class="text-sm text-green-600">{{ setPasswordSuccess }}</p>
+                <button type="submit" :disabled="setPasswordLoading"
+                    class="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50">
+                    {{ setPasswordLoading ? 'Setting...' : 'Set password' }}
+                </button>
+            </form>
         </section>
 
         <!-- Plan -->

@@ -62,12 +62,15 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - Email/password registration and login
 - **Google Sign-In** (OAuth 2.0 via Laravel Socialite) — "Continue with Google" on login and register pages
 - Existing email/password accounts automatically linked when signing in with Google for the first time
+- Google-only accounts (no password) can add email/password login at any time via **Set password** in account settings
 - Sanctum Bearer tokens, 30-day expiration
 - **Account settings** (`/settings`):
   - Update display name
   - Update email (requires current password confirmation)
-  - Change password (invalidates all other active sessions)
+  - Change password (invalidates all other active sessions) — hidden for Google-only accounts
+  - Set password — shown for Google-only accounts to add email/password sign-in
   - View Google account link status
+  - Current plan and limits
   - **Delete account** — permanently removes all events, guests, and data (GDPR compliant)
 - **Privacy Policy** at `/privacy` — data collection, retention, third-parties, user rights
 - **Terms of Service** at `/terms` — usage rules, payment terms, data ownership
@@ -84,7 +87,9 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - Rate limiting: auth endpoints (5–10 req/min), RSVP (60 req/min), authenticated API (120 req/min)
 - Open redirect protection: `?redirect=` parameter on login is validated as a relative path
 - Password policy: minimum 8 characters, must include letters and numbers (`Password::defaults()` customized in `AppServiceProvider`)
-- `/api/auth/me` returns a curated payload `{id, name, email, plan, has_google, created_at}` — Stripe internals and `google_id` are never exposed
+- `/api/auth/me` returns a curated payload `{id, name, email, plan, has_google, has_password, created_at}` — Stripe internals and `google_id` are never exposed
+- `users.password` nullable — Google-only users have no password; `has_password: false` gates the Change Password UI
+- Global 429 interceptor in the SPA → shows "Too many requests" message instead of raw error
 - Sanctum token expiration: 30 days (configurable via `SANCTUM_TOKEN_EXPIRATION`)
 - App.vue loading gate prevents unauthenticated flash while session is being verified
 - CORS restricted to `APP_URL`
@@ -173,7 +178,7 @@ Tests run against SQLite in-memory — no external services required.
 php artisan test
 ```
 
-**84 tests, 193 assertions** across:
+**87 tests, 201 assertions** across:
 - `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling), profile updates, password change, account deletion
 - `EventTest` — CRUD, publish/archive state guards, RSVP deadline validation, free tier limits
 - `GuestTest` — guest management, plan limit enforcement, CSV export, invitations
@@ -264,6 +269,7 @@ All API routes are under `/api/`. Authenticated endpoints require `Authorization
 | GET | `/auth/google/callback` | — | Google OAuth callback → token → SPA redirect (web route) |
 | PUT | `/api/auth/profile` | ✓ | Update name/email (email requires `current_password`) |
 | PUT | `/api/auth/password` | ✓ | Change password (revokes all other sessions) |
+| POST | `/api/auth/set-password` | ✓ | Set password for Google-only accounts (rejected if password already exists) |
 | DELETE | `/api/auth/account` | ✓ | Delete account and all data permanently |
 
 ### Events

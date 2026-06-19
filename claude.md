@@ -36,7 +36,7 @@
 
 ## Build Status
 
-- **Phase 1: COMPLETE** — all features implemented, production-hardened, 76 tests passing
+- **Phase 1: COMPLETE** — all features implemented, production-hardened, 87 tests passing
 - **Phase 2: NOT STARTED** — Pro/Business subscriptions, sub-events, analytics, custom domains
 - **Phase 3: NOT STARTED** — White-label, API tier, Capacitor mobile
 
@@ -63,7 +63,10 @@
 - Full error handling on all Vue pages
 - Open redirect protection on login `?redirect=` param
 - Password policy: min 8 chars + letters + numbers (set via `Password::defaults()` in AppServiceProvider)
-- `me()` endpoint returns curated payload — Stripe/Google internals never exposed; `has_google` bool tells frontend if Google is linked
+- `me()` endpoint returns curated payload — Stripe/Google internals never exposed; `has_google` and `has_password` bools tell frontend auth state
+- `POST /api/auth/set-password` — Google-only users (null password) can add email/password login; rejects if password already set
+- `users.password` is nullable — Google OAuth users created without a password; `has_password: false` means Google-only account
+- Global 429 interceptor in Vue SPA → annotates response with friendly "Too many requests" message
 - App.vue loading gate (`auth.ready`) prevents white flash on page load
 - Sanctum token expiration: 30 days (`SANCTUM_TOKEN_EXPIRATION` env, default 43200 min)
 - Password reset with custom SPA redirect URL
@@ -78,9 +81,11 @@
 - Password reset form shows field-level validation errors (not just generic message)
 - EventDetailPage stats grid shows all 5 states: total, attending, declined, pending, waitlisted
 - Guest management actions (Invite, Invite all, Add guest) hidden on archived events
-- AccountSettingsPage shows current plan with limits
+- AccountSettingsPage shows current plan with limits; Change Password hidden for Google-only users; Set Password form shown instead
 - `X-Frame-Options: DENY` (stricter than SAMEORIGIN)
 - `robots.txt` blocks /dashboard, /events, /settings, /auth/, /rsvp/ from indexing
+- `has_password` and `has_google` returned from `me()`, `register`, `login` responses
+- `APP_TIMEZONE=UTC` in `.env.example` — wall-clock time semantics depend on UTC app timezone
 
 ## Testing
 
@@ -90,7 +95,7 @@ Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`).
 php artisan test
 ```
 
-**84 tests, 193 assertions. Always run before reporting a task complete. Never suppress failures.**
+**87 tests, 201 assertions. Always run before reporting a task complete. Never suppress failures.**
 
 Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`
 
