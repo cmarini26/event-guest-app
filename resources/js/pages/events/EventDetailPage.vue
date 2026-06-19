@@ -242,11 +242,21 @@ onMounted(load);
                         ← Events
                     </RouterLink>
                 </div>
-                <h1 class="text-2xl font-bold text-gray-900">{{ event.name }}</h1>
-                <p v-if="event.venue_name" class="text-sm text-gray-500 mt-1">{{ event.venue_name }}</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <h1 class="text-2xl font-bold text-gray-900">{{ event.name }}</h1>
+                    <span :class="{
+                        'bg-gray-100 text-gray-600': event.status === 'draft',
+                        'bg-green-100 text-green-700': event.status === 'published',
+                        'bg-amber-100 text-amber-700': event.status === 'archived',
+                    }" class="text-xs font-medium px-2 py-0.5 rounded-full capitalize">{{ event.status }}</span>
+                </div>
                 <p class="text-sm text-gray-500 mt-0.5">
                     {{ formatDateTime(event.starts_at, event.timezone) }}<template v-if="event.ends_at"> – {{ formatDateTime(event.ends_at, null) }}</template>
                 </p>
+                <p v-if="event.venue_name" class="text-sm text-gray-500">
+                    {{ event.venue_name }}<span v-if="event.venue_address"> · {{ event.venue_address }}</span>
+                </p>
+                <p v-if="event.description" class="text-sm text-gray-600 mt-2 max-w-xl">{{ event.description }}</p>
 
                 <!-- Event Pass badge -->
                 <span v-if="event.event_pass_paid_at"

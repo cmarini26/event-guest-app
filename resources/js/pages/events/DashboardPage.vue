@@ -28,7 +28,7 @@ const nearFreeTierLimit = computed(() =>
 );
 
 function formatDate(d) {
-    return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
+    return d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '—';
 }
 </script>
 

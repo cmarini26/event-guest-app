@@ -49,7 +49,7 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - Plus-ones with individual names and dietary preferences
 - Automatic waitlisting when event reaches capacity
 - RSVP deadline enforcement (server-side)
-- Status guard: RSVPs rejected for draft or archived events
+- Status guard: RSVPs rejected for draft or archived events; RSVP page shows locked state with context-specific message ("not yet open" vs. "ended" vs. "deadline passed")
 - Host receives email notification on every RSVP response
 
 ### Email
@@ -173,7 +173,7 @@ Tests run against SQLite in-memory — no external services required.
 php artisan test
 ```
 
-**83 tests, 191 assertions** across:
+**84 tests, 193 assertions** across:
 - `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling), profile updates, password change, account deletion
 - `EventTest` — CRUD, publish/archive state guards, RSVP deadline validation, free tier limits
 - `GuestTest` — guest management, plan limit enforcement, CSV export, invitations

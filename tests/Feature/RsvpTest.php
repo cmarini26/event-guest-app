@@ -194,6 +194,16 @@ class RsvpTest extends TestCase
             ->assertJsonPath('message', 'RSVPs are not open for this event.');
     }
 
+    public function test_rsvp_page_includes_event_status(): void
+    {
+        $event = $this->makeEvent();
+        $guest = $this->makeGuest($event);
+
+        $this->getJson("/api/rsvp/{$guest->rsvp_token}")
+            ->assertOk()
+            ->assertJsonPath('event.status', 'published');
+    }
+
     public function test_host_is_notified_when_guest_rsvps(): void
     {
         Notification::fake();

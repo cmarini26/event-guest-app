@@ -43,6 +43,7 @@ class RsvpController extends Controller
                 'require_phone' => $guest->event->require_phone,
                 'rsvp_deadline' => $guest->event->rsvp_deadline,
                 'is_at_capacity' => $guest->event->isAtCapacity(),
+                'status' => $guest->event->status,
             ],
         ]);
     }

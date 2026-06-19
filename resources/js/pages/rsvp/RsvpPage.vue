@@ -26,7 +26,9 @@ const event = computed(() => data.value?.event);
 const guest = computed(() => data.value?.guest);
 
 const rsvpClosed = computed(() => {
-    if (!event.value?.rsvp_deadline) return false;
+    if (!event.value) return false;
+    if (event.value.status !== 'published') return true;
+    if (!event.value.rsvp_deadline) return false;
     return new Date(event.value.rsvp_deadline) < new Date();
 });
 
@@ -101,6 +103,9 @@ function formatDate(d, tz) {
                 <p v-if="event.starts_at && submitResult.status === 'attending'" class="text-sm text-gray-500 mt-1">
                     {{ formatDate(event.starts_at, event.timezone) }}
                 </p>
+                <p class="text-xs text-gray-400 mt-6">
+                    Need to change your response? Use the same invitation link.
+                </p>
             </div>
         </div>
 
@@ -124,7 +129,11 @@ function formatDate(d, tz) {
             <div v-if="rsvpClosed" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 text-center">
                 <p class="text-2xl mb-3">🔒</p>
                 <h2 class="font-semibold text-gray-900 mb-1">RSVPs are closed</h2>
-                <p class="text-sm text-gray-500">The RSVP deadline for this event has passed.</p>
+                <p class="text-sm text-gray-500">
+                    <template v-if="event.status === 'archived'">This event has ended.</template>
+                    <template v-else-if="event.status !== 'published'">RSVPs are not yet open for this event.</template>
+                    <template v-else>The RSVP deadline for this event has passed.</template>
+                </p>
             </div>
 
             <!-- RSVP form -->

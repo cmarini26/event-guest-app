@@ -67,12 +67,15 @@
 - App.vue loading gate (`auth.ready`) prevents white flash on page load
 - Sanctum token expiration: 30 days (`SANCTUM_TOKEN_EXPIRATION` env, default 43200 min)
 - Password reset with custom SPA redirect URL
+- RSVP `show()` endpoint includes `event.status`; Vue `rsvpClosed` gates on non-published status (draft/archived show locked message before form)
 - Google OAuth sign-in (Laravel Socialite) — links to existing email/password accounts
 - Account settings page (`/settings`): update name/email (email requires password confirmation), change password (revokes other sessions), connected accounts (Google link status), account deletion with cascade
 - Privacy Policy (`/privacy`) and Terms of Service (`/terms`) — required for production launch
 - Professional landing page with product screenshot mockup (Hero, Features, How it works, Pricing, CTA)
 - 404 page in Vue router
-- Event date/time shown in event's own timezone in host view, RSVP page, and guest invitation emails
+- Event date/time shown correctly using wall-clock time semantics (UTC display + timezone label) in host view, RSVP page, and guest invitation emails
+- Timezone selector on Create/Edit event forms (full IANA list via `Intl.supportedValuesOf`); defaults to browser timezone
+- Password reset form shows field-level validation errors (not just generic message)
 - EventDetailPage stats grid shows all 5 states: total, attending, declined, pending, waitlisted
 - Guest management actions (Invite, Invite all, Add guest) hidden on archived events
 - AccountSettingsPage shows current plan with limits
@@ -87,7 +90,7 @@ Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`).
 php artisan test
 ```
 
-**83 tests, 191 assertions. Always run before reporting a task complete. Never suppress failures.**
+**84 tests, 193 assertions. Always run before reporting a task complete. Never suppress failures.**
 
 Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`
 
