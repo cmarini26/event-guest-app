@@ -477,6 +477,8 @@ const plans = [
                     guestlist<span class="text-indigo-600">.</span>
                 </span>
                 <div class="flex items-center gap-6 text-sm text-gray-500">
+                    <RouterLink :to="{ name: 'privacy' }" class="hover:text-gray-900 transition-colors">Privacy</RouterLink>
+                    <RouterLink :to="{ name: 'terms' }" class="hover:text-gray-900 transition-colors">Terms</RouterLink>
                     <RouterLink :to="{ name: 'login' }" class="hover:text-gray-900 transition-colors">Sign in</RouterLink>
                     <RouterLink :to="{ name: 'register' }" class="hover:text-gray-900 transition-colors">Register</RouterLink>
                 </div>

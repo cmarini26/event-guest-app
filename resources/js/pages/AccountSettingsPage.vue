@@ -1,9 +1,16 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
 import axios from 'axios';
 
 const auth = useAuthStore();
+const router = useRouter();
+
+const deletePassword = ref('');
+const deleteError = ref('');
+const deleteLoading = ref(false);
+const showDeleteConfirm = ref(false);
 
 const profile = reactive({ name: '', email: '', current_password: '' });
 const profileErrors = ref({});
@@ -65,6 +72,23 @@ async function savePassword() {
         }
     } finally {
         passwordLoading.value = false;
+    }
+}
+
+async function deleteAccount() {
+    deleteError.value = '';
+    deleteLoading.value = true;
+    try {
+        await axios.delete('/api/auth/account', {
+            data: auth.user?.has_google && !auth.user?.password ? {} : { password: deletePassword.value },
+        });
+        auth.clearSession();
+        router.push({ name: 'home' });
+    } catch (err) {
+        deleteError.value = err.response?.data?.errors?.password?.[0]
+            ?? err.response?.data?.message
+            ?? 'Something went wrong.';
+        deleteLoading.value = false;
     }
 }
 </script>
@@ -137,7 +161,7 @@ async function savePassword() {
         </section>
 
         <!-- Connected accounts -->
-        <section class="bg-white rounded-xl border border-gray-200 p-6">
+        <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 class="text-base font-semibold text-gray-900 mb-4">Connected accounts</h2>
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
@@ -157,6 +181,42 @@ async function savePassword() {
                     Connect
                 </a>
                 <span v-else class="text-xs text-green-600 font-medium">✓ Active</span>
+            </div>
+        </section>
+
+        <!-- Danger zone -->
+        <section class="rounded-xl border border-red-200 p-6">
+            <h2 class="text-base font-semibold text-red-700 mb-1">Danger zone</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Permanently delete your account and all associated events and guest data. This cannot be undone.
+            </p>
+
+            <div v-if="!showDeleteConfirm">
+                <button @click="showDeleteConfirm = true"
+                    class="px-4 py-2 border border-red-300 text-red-600 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors">
+                    Delete my account
+                </button>
+            </div>
+
+            <div v-else class="space-y-3">
+                <div v-if="auth.user?.password !== false">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Confirm with your password
+                    </label>
+                    <input v-model="deletePassword" type="password" placeholder="Enter your password"
+                        class="w-full px-3 py-2 border border-red-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500" />
+                </div>
+                <p v-if="deleteError" class="text-sm text-red-600">{{ deleteError }}</p>
+                <div class="flex gap-3">
+                    <button @click="deleteAccount" :disabled="deleteLoading"
+                        class="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50">
+                        {{ deleteLoading ? 'Deleting...' : 'Yes, delete my account' }}
+                    </button>
+                    <button @click="showDeleteConfirm = false; deletePassword = ''; deleteError = ''"
+                        class="px-4 py-2 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50">
+                        Cancel
+                    </button>
+                </div>
             </div>
         </section>
     </div>

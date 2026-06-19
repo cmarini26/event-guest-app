@@ -84,6 +84,27 @@ class AuthTest extends TestCase
         $this->getJson('/api/auth/me')->assertUnauthorized();
     }
 
+    public function test_user_can_delete_account(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('password1')]);
+
+        $this->actingAs($user, 'sanctum')
+            ->deleteJson('/api/auth/account', ['password' => 'password1'])
+            ->assertOk();
+
+        $this->assertDatabaseMissing('users', ['id' => $user->id]);
+    }
+
+    public function test_account_deletion_rejects_wrong_password(): void
+    {
+        $user = User::factory()->create(['password' => bcrypt('correct1')]);
+
+        $this->actingAs($user, 'sanctum')
+            ->deleteJson('/api/auth/account', ['password' => 'wrong1234'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('password');
+    }
+
     public function test_google_callback_creates_new_user(): void
     {
         $socialUser = Mockery::mock('Laravel\Socialite\Two\User');

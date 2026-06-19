@@ -13,6 +13,8 @@ const routes = [
             { path: 'reset-password/:token', name: 'reset-password', component: () => import('@/pages/auth/ResetPasswordPage.vue') },
             { path: 'rsvp/:token', name: 'rsvp', component: () => import('@/pages/rsvp/RsvpPage.vue') },
             { path: 'auth/callback', name: 'auth.callback', component: () => import('@/pages/auth/AuthCallbackPage.vue') },
+            { path: 'privacy', name: 'privacy', component: () => import('@/pages/PrivacyPage.vue') },
+            { path: 'terms', name: 'terms', component: () => import('@/pages/TermsPage.vue') },
         ],
     },
     {

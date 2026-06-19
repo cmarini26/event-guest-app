@@ -130,4 +130,25 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Password updated.']);
     }
+
+    public function deleteAccount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Google-only accounts have no password; skip verification for them
+        if ($user->password) {
+            $request->validate([
+                'password' => ['required', function ($attr, $value, $fail) use ($user) {
+                    if (! Hash::check($value, $user->password)) {
+                        $fail('Password is incorrect.');
+                    }
+                }],
+            ]);
+        }
+
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json(['message' => 'Account deleted.']);
+    }
 }
