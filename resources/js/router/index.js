@@ -12,6 +12,7 @@ const routes = [
             { path: 'forgot-password', name: 'forgot-password', component: () => import('@/pages/auth/ForgotPasswordPage.vue') },
             { path: 'reset-password/:token', name: 'reset-password', component: () => import('@/pages/auth/ResetPasswordPage.vue') },
             { path: 'rsvp/:token', name: 'rsvp', component: () => import('@/pages/rsvp/RsvpPage.vue') },
+            { path: 'auth/callback', name: 'auth.callback', component: () => import('@/pages/auth/AuthCallbackPage.vue') },
         ],
     },
     {

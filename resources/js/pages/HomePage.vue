@@ -14,6 +14,13 @@ import {
 
 const auth = useAuthStore();
 
+const mockGuests = [
+    { name: 'Alice Chen', email: 'alice@example.com', initials: 'AC', status: 'attending', statusClass: 'bg-green-100 text-green-700' },
+    { name: 'Ben Okafor', email: 'ben@example.com', initials: 'BO', status: 'attending', statusClass: 'bg-green-100 text-green-700' },
+    { name: 'Clara Mills', email: 'clara@example.com', initials: 'CM', status: 'pending', statusClass: 'bg-gray-100 text-gray-600' },
+    { name: 'David Park', email: 'dpark@example.com', initials: 'DP', status: 'declined', statusClass: 'bg-red-100 text-red-600' },
+];
+
 const features = [
     {
         icon: UsersRound,
@@ -185,6 +192,122 @@ const plans = [
                 </div>
 
                 <p class="mt-5 text-sm text-gray-400">Free forever · No credit card required</p>
+            </div>
+
+            <!-- Product screenshot mockup -->
+            <div class="relative max-w-5xl mx-auto mt-16">
+                <div class="absolute -inset-4 bg-gradient-to-b from-indigo-100/40 to-transparent rounded-3xl blur-2xl" />
+                <div class="relative rounded-xl overflow-hidden border border-gray-200 shadow-2xl shadow-gray-200/80">
+                    <!-- Browser chrome -->
+                    <div class="bg-gray-100 border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+                        <div class="flex gap-1.5">
+                            <div class="w-3 h-3 rounded-full bg-red-400/80" />
+                            <div class="w-3 h-3 rounded-full bg-yellow-400/80" />
+                            <div class="w-3 h-3 rounded-full bg-green-400/80" />
+                        </div>
+                        <div class="flex-1 flex justify-center">
+                            <div class="bg-white rounded-md px-4 py-1 text-xs text-gray-400 border border-gray-200 min-w-48 text-center">
+                                app.guestlist.io/dashboard
+                            </div>
+                        </div>
+                    </div>
+                    <!-- App shell -->
+                    <div class="bg-gray-50 flex" style="height: 440px;">
+                        <!-- Sidebar nav -->
+                        <div class="w-52 bg-white border-r border-gray-100 p-4 shrink-0">
+                            <div class="font-bold text-gray-900 text-base mb-6">
+                                guestlist<span class="text-indigo-600">.</span>
+                            </div>
+                            <nav class="space-y-1">
+                                <div class="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-gray-900 text-white text-sm font-medium">
+                                    <div class="w-4 h-4 rounded bg-white/20" />
+                                    Events
+                                </div>
+                                <div class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-gray-500 text-sm">
+                                    <div class="w-4 h-4 rounded bg-gray-200" />
+                                    Settings
+                                </div>
+                            </nav>
+                            <div class="absolute bottom-8 left-4 right-4 w-44">
+                                <div class="flex items-center gap-2.5 px-3 py-2">
+                                    <div class="w-7 h-7 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-700">J</div>
+                                    <div>
+                                        <div class="text-xs font-medium text-gray-700">Jane Host</div>
+                                        <div class="text-xs text-gray-400">Free plan</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Main content -->
+                        <div class="flex-1 p-6 overflow-hidden">
+                            <div class="flex items-center justify-between mb-5">
+                                <div>
+                                    <div class="text-lg font-bold text-gray-900">Your Events</div>
+                                    <div class="text-xs text-gray-400 mt-0.5">Plan: Free</div>
+                                </div>
+                                <div class="px-3 py-1.5 bg-gray-900 text-white text-xs font-medium rounded-lg">+ New Event</div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-4">
+                                <!-- Event card 1 -->
+                                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="text-sm font-semibold text-gray-900 leading-snug">Summer Garden Party</div>
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium shrink-0 ml-2">published</span>
+                                    </div>
+                                    <div class="text-xs text-gray-400 mb-3">Jul 12, 2026</div>
+                                    <div class="flex gap-3 text-xs text-gray-500">
+                                        <span><b class="text-gray-800">48</b> guests</span>
+                                        <span><b class="text-gray-800">31</b> attending</span>
+                                    </div>
+                                </div>
+                                <!-- Event card 2 -->
+                                <div class="bg-white rounded-xl border border-gray-200 p-4">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="text-sm font-semibold text-gray-900 leading-snug">Q3 All-Hands</div>
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium shrink-0 ml-2">published</span>
+                                    </div>
+                                    <div class="text-xs text-gray-400 mb-3">Aug 3, 2026</div>
+                                    <div class="flex gap-3 text-xs text-gray-500">
+                                        <span><b class="text-gray-800">120</b> guests</span>
+                                        <span><b class="text-gray-800">89</b> attending</span>
+                                    </div>
+                                </div>
+                                <!-- Event card 3 -->
+                                <div class="bg-white rounded-xl border border-gray-200 p-4 opacity-60">
+                                    <div class="flex items-start justify-between mb-2">
+                                        <div class="text-sm font-semibold text-gray-900 leading-snug">Holiday Dinner</div>
+                                        <span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 font-medium shrink-0 ml-2">draft</span>
+                                    </div>
+                                    <div class="text-xs text-gray-400 mb-3">Dec 18, 2026</div>
+                                    <div class="flex gap-3 text-xs text-gray-500">
+                                        <span><b class="text-gray-800">0</b> guests</span>
+                                        <span><b class="text-gray-800">0</b> attending</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Guest list preview -->
+                            <div class="mt-4 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                                <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                                    <div class="text-sm font-semibold text-gray-900">Summer Garden Party — Guests</div>
+                                    <div class="flex gap-2">
+                                        <div class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">Invite all</div>
+                                        <div class="px-2 py-1 rounded text-xs bg-gray-100 text-gray-600">Export CSV</div>
+                                    </div>
+                                </div>
+                                <div class="divide-y divide-gray-50">
+                                    <div v-for="g in mockGuests" :key="g.name" class="px-4 py-2.5 flex items-center gap-3">
+                                        <div class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500 shrink-0">{{ g.initials }}</div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-xs font-medium text-gray-800">{{ g.name }}</div>
+                                            <div class="text-xs text-gray-400">{{ g.email }}</div>
+                                        </div>
+                                        <span :class="['text-xs px-2 py-0.5 rounded-full font-medium', g.statusClass]">{{ g.status }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
 

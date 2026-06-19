@@ -36,7 +36,7 @@
 
 ## Build Status
 
-- **Phase 1: COMPLETE** — all features implemented, production-hardened, 72 tests passing
+- **Phase 1: COMPLETE** — all features implemented, production-hardened, 76 tests passing
 - **Phase 2: NOT STARTED** — Pro/Business subscriptions, sub-events, analytics, custom domains
 - **Phase 3: NOT STARTED** — White-label, API tier, Capacitor mobile
 
@@ -65,7 +65,8 @@
 - App.vue loading gate (`auth.ready`) prevents white flash on page load
 - Sanctum token expiration: 30 days (`SANCTUM_TOKEN_EXPIRATION` env, default 43200 min)
 - Password reset with custom SPA redirect URL
-- Professional landing page (Hero, Features, How it works, Pricing, CTA)
+- Google OAuth sign-in (Laravel Socialite) — links to existing email/password accounts
+- Professional landing page with product screenshot mockup (Hero, Features, How it works, Pricing, CTA)
 - 404 page in Vue router
 
 ## Testing
@@ -76,7 +77,7 @@ Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`).
 php artisan test
 ```
 
-**72 tests, 161 assertions. Always run before reporting a task complete. Never suppress failures.**
+**76 tests, 173 assertions. Always run before reporting a task complete. Never suppress failures.**
 
 Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`
 
@@ -95,6 +96,8 @@ Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `Pas
 - `effectiveGuestLimit()` on Event uses `$this->user?->guestLimit()` with nullable-safe chaining — `user` may not be loaded
 - Stripe webhook endpoint at `/api/webhooks/stripe` is outside the Sanctum middleware group (public)
 - `GuestInvitation` and `RsvpReceived` both implement `ShouldQueue` — start `php artisan queue:work` in dev
+- Google OAuth: `GET /auth/google/redirect` + `GET /auth/google/callback` are **web routes** (not API) — OAuth flows require browser redirects. Callback generates a Sanctum token and redirects to `/auth/callback?token=xxx` in the SPA.
+- `AuthCallbackPage.vue` at `/auth/callback` reads the token, calls `auth.loginWithToken()`, then navigates to dashboard. `loginWithToken()` clears `_fetchPromise` before re-fetching to avoid stale cache.
 
 ## Deployment Quick Reference
 

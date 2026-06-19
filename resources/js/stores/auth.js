@@ -87,5 +87,11 @@ export const useAuthStore = defineStore('auth', () => {
         _fetchPromise = null;
     }
 
-    return { user, token, loading, ready, isAuthenticated, fetchUser, login, register, logout, clearSession };
+    async function loginWithToken(rawToken) {
+        setToken(rawToken);
+        _fetchPromise = null;
+        await fetchUser();
+    }
+
+    return { user, token, loading, ready, isAuthenticated, fetchUser, login, register, logout, clearSession, loginWithToken };
 });

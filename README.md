@@ -55,6 +55,12 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - **Password reset** — customized URL pointing to `/reset-password/:token` in the SPA
 - All email via Resend; all notification jobs queued
 
+### Authentication
+- Email/password registration and login
+- **Google Sign-In** (OAuth 2.0 via Laravel Socialite) — "Continue with Google" on login and register pages
+- Existing email/password accounts automatically linked when signing in with Google for the first time
+- Sanctum Bearer tokens, 30-day expiration
+
 ### Access Control & Limits
 | Plan | Guest limit | Active events |
 |------|------------|---------------|
@@ -127,7 +133,13 @@ STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxx
 
 # Optional: Sanctum token lifetime in minutes (default 43200 = 30 days)
 SANCTUM_TOKEN_EXPIRATION=43200
+
+# Google OAuth (required for "Continue with Google")
+GOOGLE_CLIENT_ID=xxxxxxxxxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxx
 ```
+
+**Google OAuth setup:** In the [Google Cloud Console](https://console.cloud.google.com/), create OAuth 2.0 credentials and add `{APP_URL}/auth/google/callback` as an authorized redirect URI.
 
 ### Queue Worker
 
@@ -147,8 +159,8 @@ Tests run against SQLite in-memory — no external services required.
 php artisan test
 ```
 
-**72 tests, 161 assertions** across:
-- `AuthTest` — registration, login, logout, token auth
+**76 tests, 173 assertions** across:
+- `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling)
 - `EventTest` — CRUD, publish/archive state guards, RSVP deadline validation, free tier limits
 - `GuestTest` — guest management, plan limit enforcement, CSV export, invitations
 - `RsvpTest` — RSVP flow, preferences, plus-ones, deadline enforcement, host notifications
@@ -234,6 +246,8 @@ All API routes are under `/api/`. Authenticated endpoints require `Authorization
 | GET | `/api/auth/me` | ✓ | Current user |
 | POST | `/api/auth/forgot-password` | — | Send reset link |
 | POST | `/api/auth/reset-password` | — | Reset with token |
+| GET | `/auth/google/redirect` | — | Redirect to Google OAuth (web route) |
+| GET | `/auth/google/callback` | — | Google OAuth callback → token → SPA redirect (web route) |
 
 ### Events
 | Method | Endpoint | Description |
