@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -36,7 +35,6 @@ class SocialAuthController extends Controller
                     'name'      => $socialUser->getName() ?? $socialUser->getEmail(),
                     'email'     => $socialUser->getEmail(),
                     'google_id' => $socialUser->getId(),
-                    'password'  => bcrypt(Str::random(32)),
                 ]);
             }
         }

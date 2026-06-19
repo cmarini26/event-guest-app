@@ -80,7 +80,7 @@ async function deleteAccount() {
     deleteLoading.value = true;
     try {
         await axios.delete('/api/auth/account', {
-            data: auth.user?.has_google && !auth.user?.password ? {} : { password: deletePassword.value },
+            data: auth.user?.has_password ? { password: deletePassword.value } : {},
         });
         auth.clearSession();
         router.push({ name: 'home' });
@@ -129,7 +129,7 @@ async function deleteAccount() {
         </section>
 
         <!-- Password -->
-        <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <section v-if="auth.user?.has_password" class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 class="text-base font-semibold text-gray-900 mb-1">Change password</h2>
             <p class="text-sm text-gray-500 mb-5">Changing your password will sign out all other devices.</p>
             <form @submit.prevent="savePassword" class="space-y-4">
@@ -219,7 +219,7 @@ async function deleteAccount() {
             </div>
 
             <div v-else class="space-y-3">
-                <div v-if="auth.user?.password !== false">
+                <div v-if="auth.user?.has_password">
                     <label class="block text-sm font-medium text-gray-700 mb-1">
                         Confirm with your password
                     </label>

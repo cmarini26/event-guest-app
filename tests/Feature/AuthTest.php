@@ -62,12 +62,22 @@ class AuthTest extends TestCase
 
     public function test_authenticated_user_can_fetch_profile(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['password' => bcrypt('password1')]);
 
         $this->actingAs($user, 'sanctum')
             ->getJson('/api/auth/me')
             ->assertOk()
-            ->assertJsonFragment(['email' => $user->email]);
+            ->assertJsonFragment(['email' => $user->email, 'has_password' => true]);
+    }
+
+    public function test_me_returns_has_password_false_for_google_only_user(): void
+    {
+        $user = User::factory()->create(['password' => null, 'google_id' => 'google-uid-999']);
+
+        $this->actingAs($user, 'sanctum')
+            ->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonFragment(['has_password' => false, 'has_google' => true]);
     }
 
     public function test_user_can_logout(): void

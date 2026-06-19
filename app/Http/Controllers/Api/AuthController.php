@@ -69,12 +69,13 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'plan'       => $user->plan,
-            'has_google' => $user->google_id !== null,
-            'created_at' => $user->created_at,
+            'id'           => $user->id,
+            'name'         => $user->name,
+            'email'        => $user->email,
+            'plan'         => $user->plan,
+            'has_google'   => $user->google_id !== null,
+            'has_password' => $user->password !== null,
+            'created_at'   => $user->created_at,
         ]);
     }
 
@@ -100,12 +101,13 @@ class AuthController extends Controller
         $user->update($data);
 
         return response()->json([
-            'id'         => $user->id,
-            'name'       => $user->name,
-            'email'      => $user->email,
-            'plan'       => $user->plan,
-            'has_google' => $user->google_id !== null,
-            'created_at' => $user->created_at,
+            'id'           => $user->id,
+            'name'         => $user->name,
+            'email'        => $user->email,
+            'plan'         => $user->plan,
+            'has_google'   => $user->google_id !== null,
+            'has_password' => $user->password !== null,
+            'created_at'   => $user->created_at,
         ]);
     }
 
