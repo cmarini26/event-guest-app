@@ -62,6 +62,8 @@
 - Global 401 interceptor in Vue SPA
 - Full error handling on all Vue pages
 - Open redirect protection on login `?redirect=` param
+- Password policy: min 8 chars + letters + numbers (set via `Password::defaults()` in AppServiceProvider)
+- `me()` endpoint returns curated payload — Stripe/Google internals never exposed; `has_google` bool tells frontend if Google is linked
 - App.vue loading gate (`auth.ready`) prevents white flash on page load
 - Sanctum token expiration: 30 days (`SANCTUM_TOKEN_EXPIRATION` env, default 43200 min)
 - Password reset with custom SPA redirect URL

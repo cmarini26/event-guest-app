@@ -72,6 +72,8 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 ### Security & Hardening
 - Rate limiting: auth endpoints (5–10 req/min), RSVP (60 req/min), authenticated API (120 req/min)
 - Open redirect protection: `?redirect=` parameter on login is validated as a relative path
+- Password policy: minimum 8 characters, must include letters and numbers (`Password::defaults()` customized in `AppServiceProvider`)
+- `/api/auth/me` returns a curated payload `{id, name, email, plan, has_google, created_at}` — Stripe internals and `google_id` are never exposed
 - Sanctum token expiration: 30 days (configurable via `SANCTUM_TOKEN_EXPIRATION`)
 - App.vue loading gate prevents unauthenticated flash while session is being verified
 - CORS restricted to `APP_URL`
