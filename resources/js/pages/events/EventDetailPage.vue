@@ -410,9 +410,8 @@ onMounted(load);
                 <tbody>
                     <template v-for="guest in guests" :key="guest.id">
                         <tr class="border-t border-gray-50 hover:bg-gray-50"
-                            :class="{ 'bg-gray-50': expandedGuest?.id === guest.id }"
-                            @click="hasPreferences ? toggleExpand(guest) : null"
-                            :class="{ 'cursor-pointer': hasPreferences }">
+                            :class="{ 'bg-gray-50': expandedGuest?.id === guest.id, 'cursor-pointer': hasPreferences }"
+                            @click="hasPreferences ? toggleExpand(guest) : null">
                             <td class="px-5 py-3 font-medium text-gray-900">
                                 <span class="flex items-center gap-1.5">
                                     <span v-if="hasPreferences" class="text-gray-400 text-xs">

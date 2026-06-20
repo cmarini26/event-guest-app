@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -26,10 +28,12 @@ class AuthController extends Controller
             'password' => Hash::make($data['password']),
         ]);
 
+        $user->sendEmailVerificationNotification();
+
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => false, 'has_password' => true],
+            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => false, 'has_password' => true, 'is_admin' => false, 'email_verified' => false],
             'token' => $token,
         ], 201);
     }
@@ -52,7 +56,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth')->plainTextToken;
 
         return response()->json([
-            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => $user->google_id !== null, 'has_password' => $user->password !== null],
+            'user'  => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'plan' => $user->plan, 'has_google' => $user->google_id !== null, 'has_password' => $user->password !== null, 'is_admin' => $user->is_admin, 'email_verified' => $user->hasVerifiedEmail()],
             'token' => $token,
         ]);
     }
@@ -69,13 +73,15 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'id'           => $user->id,
-            'name'         => $user->name,
-            'email'        => $user->email,
-            'plan'         => $user->plan,
-            'has_google'   => $user->google_id !== null,
-            'has_password' => $user->password !== null,
-            'created_at'   => $user->created_at,
+            'id'             => $user->id,
+            'name'           => $user->name,
+            'email'          => $user->email,
+            'plan'           => $user->plan,
+            'has_google'     => $user->google_id !== null,
+            'has_password'   => $user->password !== null,
+            'is_admin'       => $user->is_admin,
+            'email_verified' => $user->hasVerifiedEmail(),
+            'created_at'     => $user->created_at,
         ]);
     }
 
@@ -89,6 +95,11 @@ class AuthController extends Controller
         ]);
 
         if ($data['email'] !== $user->email) {
+            if ($user->password === null) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'email' => ['Set a password before changing your email address.'],
+                ]);
+            }
             $request->validate([
                 'current_password' => ['required', function ($attr, $value, $fail) use ($user) {
                     if (! Hash::check($value, $user->password)) {
@@ -101,13 +112,15 @@ class AuthController extends Controller
         $user->update($data);
 
         return response()->json([
-            'id'           => $user->id,
-            'name'         => $user->name,
-            'email'        => $user->email,
-            'plan'         => $user->plan,
-            'has_google'   => $user->google_id !== null,
-            'has_password' => $user->password !== null,
-            'created_at'   => $user->created_at,
+            'id'             => $user->id,
+            'name'           => $user->name,
+            'email'          => $user->email,
+            'plan'           => $user->plan,
+            'has_google'     => $user->google_id !== null,
+            'has_password'   => $user->password !== null,
+            'is_admin'       => $user->is_admin,
+            'email_verified' => $user->hasVerifiedEmail(),
+            'created_at'     => $user->created_at,
         ]);
     }
 
@@ -170,5 +183,15 @@ class AuthController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'Account deleted.']);
+    }
+
+    public function googleLinkToken(Request $request): JsonResponse
+    {
+        $token = Str::random(32);
+        Cache::put("google-link:{$token}", $request->user()->id, 300);
+
+        return response()->json([
+            'redirect_url' => config('app.url') . '/auth/google/link?token=' . $token,
+        ]);
     }
 }

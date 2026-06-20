@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\URL;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 use Laravel\Socialite\Facades\Socialite;
 use Mockery;
@@ -214,6 +217,19 @@ class AuthTest extends TestCase
             ->assertJsonValidationErrors('current_password');
     }
 
+    public function test_google_only_user_cannot_change_email_without_password(): void
+    {
+        $user = User::factory()->create(['password' => null, 'google_id' => 'google-uid-email']);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson('/api/auth/profile', [
+                'name' => $user->name,
+                'email' => 'newemail@example.com',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
+    }
+
     public function test_user_can_change_password(): void
     {
         $user = User::factory()->create(['password' => bcrypt('oldPass1')]);
@@ -280,5 +296,155 @@ class AuthTest extends TestCase
         $this->get('/auth/google/callback')
             ->assertRedirect()
             ->assertRedirectContains('/login?error=google_failed');
+    }
+
+    public function test_verification_email_sent_on_register(): void
+    {
+        Notification::fake();
+
+        $this->postJson('/api/auth/register', [
+            'name'                  => 'Test User',
+            'email'                 => 'verify@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+        ])->assertCreated();
+
+        $user = User::where('email', 'verify@example.com')->firstOrFail();
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_register_response_includes_email_verified_false(): void
+    {
+        Notification::fake();
+
+        $response = $this->postJson('/api/auth/register', [
+            'name'                  => 'Test User',
+            'email'                 => 'unverified@example.com',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertCreated()->assertJsonFragment(['email_verified' => false]);
+    }
+
+    public function test_user_can_verify_email(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => null]);
+
+        $url = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => sha1($user->email)]
+        );
+
+        $this->get($url)->assertRedirect();
+
+        $this->assertNotNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_email_verification_rejects_invalid_hash(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => null]);
+
+        $url = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $user->id, 'hash' => 'bad-hash']
+        );
+
+        $this->get($url)->assertForbidden();
+        $this->assertNull($user->fresh()->email_verified_at);
+    }
+
+    public function test_user_can_resend_verification_email(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create(['email_verified_at' => null]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/auth/resend-verification')
+            ->assertOk()
+            ->assertJsonFragment(['message' => 'Verification email sent.']);
+
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_resend_returns_message_if_already_verified(): void
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/auth/resend-verification')
+            ->assertOk()
+            ->assertJsonFragment(['message' => 'Email already verified.']);
+    }
+
+    public function test_me_includes_email_verified_flag(): void
+    {
+        $unverified = User::factory()->create(['email_verified_at' => null]);
+        $verified   = User::factory()->create(['email_verified_at' => now()]);
+
+        $this->actingAs($unverified, 'sanctum')
+            ->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonFragment(['email_verified' => false]);
+
+        $this->actingAs($verified, 'sanctum')
+            ->getJson('/api/auth/me')
+            ->assertOk()
+            ->assertJsonFragment(['email_verified' => true]);
+    }
+
+    public function test_google_user_email_verified_automatically(): void
+    {
+        $socialUser = Mockery::mock('Laravel\Socialite\Two\User');
+        $socialUser->shouldReceive('getId')->andReturn('google-uid-verify');
+        $socialUser->shouldReceive('getEmail')->andReturn('google-verify@example.com');
+        $socialUser->shouldReceive('getName')->andReturn('Google Verified');
+
+        $provider = Mockery::mock('Laravel\Socialite\Contracts\Provider');
+        $provider->shouldReceive('user')->andReturn($socialUser);
+
+        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+        $this->get('/auth/google/callback')->assertRedirect();
+
+        $user = User::where('email', 'google-verify@example.com')->firstOrFail();
+        $this->assertNotNull($user->email_verified_at);
+    }
+
+    public function test_user_can_get_google_link_token(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this->actingAs($user, 'sanctum')
+            ->postJson('/api/auth/google/link-token')
+            ->assertOk()
+            ->assertJsonStructure(['redirect_url']);
+
+        $this->assertStringContainsString('/auth/google/link?token=', $response->json('redirect_url'));
+    }
+
+    public function test_google_link_flow_links_google_to_existing_user(): void
+    {
+        $user = User::factory()->create(['google_id' => null]);
+
+        $socialUser = Mockery::mock('Laravel\Socialite\Two\User');
+        $socialUser->shouldReceive('getId')->andReturn('google-uid-link');
+        $socialUser->shouldReceive('getEmail')->andReturn('different@gmail.com');
+        $socialUser->shouldReceive('getName')->andReturn('Link User');
+
+        $provider = Mockery::mock('Laravel\Socialite\Contracts\Provider');
+        $provider->shouldReceive('user')->andReturn($socialUser);
+
+        Socialite::shouldReceive('driver')->with('google')->andReturn($provider);
+
+        $this->withSession(['link_user_id' => $user->id])
+            ->get('/auth/google/callback')
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'google_id' => 'google-uid-link']);
+        $this->assertCount(1, User::where('google_id', 'google-uid-link')->get());
     }
 }

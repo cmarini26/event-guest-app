@@ -95,11 +95,13 @@ async function submit() {
                     <label class="block text-sm font-medium text-gray-700 mb-1">Start *</label>
                     <input v-model="form.starts_at" type="datetime-local" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+                    <p v-if="errors.starts_at" class="mt-1 text-sm text-red-600">{{ errors.starts_at[0] }}</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">End</label>
                     <input v-model="form.ends_at" type="datetime-local"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900" />
+                    <p v-if="errors.ends_at" class="mt-1 text-sm text-red-600">{{ errors.ends_at[0] }}</p>
                 </div>
             </div>
 

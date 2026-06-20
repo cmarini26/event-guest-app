@@ -41,4 +41,13 @@ return [
         'redirect' => env('APP_URL') . '/auth/google/callback',
     ],
 
+    'stripe' => [
+        'plans' => [
+            'pro_monthly'       => env('STRIPE_PRO_MONTHLY_PRICE_ID'),
+            'pro_annual'        => env('STRIPE_PRO_ANNUAL_PRICE_ID'),
+            'business_monthly'  => env('STRIPE_BUSINESS_MONTHLY_PRICE_ID'),
+            'business_annual'   => env('STRIPE_BUSINESS_ANNUAL_PRICE_ID'),
+        ],
+    ],
+
 ];

@@ -93,20 +93,18 @@ const plans = [
     },
     {
         name: 'Pro',
-        price: null,
-        period: null,
+        price: '$29',
+        period: 'month',
         description: 'Unlimited events and guests for power users.',
         features: [
+            'Everything in Event Pass',
             'Unlimited active events',
             'Unlimited guests',
-            'Sub-event support',
-            'Custom domain',
             'Priority support',
         ],
-        cta: 'Coming soon',
-        ctaTo: null,
+        cta: 'Start with Pro',
+        ctaTo: { name: 'register' },
         highlight: false,
-        comingSoon: true,
     },
 ];
 </script>
@@ -403,11 +401,8 @@ const plans = [
                         </div>
 
                         <div class="mb-4">
-                            <template v-if="plan.price">
-                                <span class="text-3xl font-bold text-gray-900">{{ plan.price }}</span>
-                                <span class="text-sm text-gray-500 ml-1">/ {{ plan.period }}</span>
-                            </template>
-                            <span v-else class="text-3xl font-bold text-gray-400">TBA</span>
+                            <span class="text-3xl font-bold text-gray-900">{{ plan.price }}</span>
+                            <span class="text-sm text-gray-500 ml-1">/ {{ plan.period }}</span>
                         </div>
 
                         <p class="text-sm text-gray-500 mb-6">{{ plan.description }}</p>
@@ -424,7 +419,7 @@ const plans = [
                         </ul>
 
                         <RouterLink
-                            v-if="plan.ctaTo && !plan.comingSoon"
+                            v-if="plan.ctaTo"
                             :to="plan.ctaTo"
                             :class="[
                                 'text-center py-2.5 rounded-xl text-sm font-medium transition-colors',
@@ -435,12 +430,6 @@ const plans = [
                         >
                             {{ plan.cta }}
                         </RouterLink>
-                        <div
-                            v-else
-                            class="text-center py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-400 cursor-default"
-                        >
-                            {{ plan.cta }}
-                        </div>
                     </div>
                 </div>
             </div>

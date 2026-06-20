@@ -60,7 +60,8 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 
 ### Authentication & Account Management
 - Email/password registration and login
-- **Google Sign-In** (OAuth 2.0 via Laravel Socialite) — "Continue with Google" on login and register pages
+- **Email verification** — queued verification email on registration; amber banner in app prompts unverified users; one-click resend; verified status shown in all auth responses
+- **Google Sign-In** (OAuth 2.0 via Laravel Socialite) — "Continue with Google" on login and register pages; Google accounts auto-verified
 - Existing email/password accounts automatically linked when signing in with Google for the first time
 - Google-only accounts (no password) can add email/password login at any time via **Set password** in account settings
 - Sanctum Bearer tokens, 30-day expiration
@@ -69,11 +70,26 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
   - Update email (requires current password confirmation)
   - Change password (invalidates all other active sessions) — hidden for Google-only accounts
   - Set password — shown for Google-only accounts to add email/password sign-in
-  - View Google account link status
+  - Connect Google account — uses a secure link-token flow that correctly links to the current account regardless of email mismatch
   - Current plan and limits
   - **Delete account** — permanently removes all events, guests, and data (GDPR compliant)
 - **Privacy Policy** at `/privacy` — data collection, retention, third-parties, user rights
 - **Terms of Service** at `/terms` — usage rules, payment terms, data ownership
+
+### Admin Panel
+- Internal panel at `/admin` — visible only to users with `is_admin: true`
+- Stats overview: total users, events, active events, guests, Event Pass purchases, gross revenue
+- Full user table: name, email, plan badge, event count, join date, role
+- Read-only — no data editing from the panel
+- Grant admin access: `php artisan admin:promote email@example.com`
+- Per-user event drill-down: click any user row to expand their events list
+- Toggle admin status: Grant/Revoke buttons per user (cannot change own status)
+- Failed-jobs alert banner when queue has errors
+- Stats card for failed jobs count
+
+### Healthcheck
+
+`GET /api/health` — public endpoint for uptime monitoring; checks database, cache, and queue table. Returns `200` with `{status: "ok"}` when healthy, `503` with `{status: "degraded"}` on any failure.
 
 ### Access Control & Limits
 | Plan | Guest limit | Active events |
@@ -161,6 +177,15 @@ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxx
 
 **Google OAuth setup:** In the [Google Cloud Console](https://console.cloud.google.com/), create OAuth 2.0 credentials and add `{APP_URL}/auth/google/callback` as an authorized redirect URI.
 
+**Stripe subscription setup:** In the Stripe dashboard, create Products with Prices for each plan tier and billing interval (monthly/annual). Copy the Price IDs into `.env`:
+```env
+STRIPE_PRO_MONTHLY_PRICE_ID=price_xxx
+STRIPE_PRO_ANNUAL_PRICE_ID=price_xxx
+STRIPE_BUSINESS_MONTHLY_PRICE_ID=price_xxx
+STRIPE_BUSINESS_ANNUAL_PRICE_ID=price_xxx
+```
+Also configure a Stripe Billing Portal (Stripe Dashboard → Billing → Customer portal) — used for the "Manage subscription" link. Add `customer.subscription.created`, `customer.subscription.updated`, and `customer.subscription.deleted` events to the webhook endpoint alongside `checkout.session.completed`.
+
 ### Queue Worker
 
 Email notifications are queued. Start the worker in a separate terminal:
@@ -179,13 +204,14 @@ Tests run against SQLite in-memory — no external services required.
 php artisan test
 ```
 
-**87 tests, 201 assertions** across:
-- `AuthTest` — registration, login, logout, token auth, Google OAuth (create/link/find user, error handling), profile updates, password change, account deletion
+**120 tests, 290 assertions** across:
+- `AuthTest` — registration, login, logout, token auth, email verification (send/verify/resend), Google OAuth (create/link/find user/account linking/error handling), profile updates, password change, account deletion
 - `EventTest` — CRUD, publish/archive state guards, RSVP deadline validation, free tier limits
 - `GuestTest` — guest management, plan limit enforcement, CSV export, invitations
 - `RsvpTest` — RSVP flow, preferences, plus-ones, deadline enforcement, host notifications
 - `StripeTest` — Event Pass checkout, webhook signature verification, idempotency
 - `PasswordResetTest` — forgot password, reset flow
+- `AdminTest` — admin stats (inc. failed_jobs), user list, user events drill-down, is_admin toggle, non-admin rejection, healthcheck, is_admin flag in auth responses
 
 ---
 
@@ -271,7 +297,18 @@ All API routes are under `/api/`. Authenticated endpoints require `Authorization
 | PUT | `/api/auth/profile` | ✓ | Update name/email (email requires `current_password`) |
 | PUT | `/api/auth/password` | ✓ | Change password (revokes all other sessions) |
 | POST | `/api/auth/set-password` | ✓ | Set password for Google-only accounts (rejected if password already exists) |
+| GET | `/api/auth/verify-email/{id}/{hash}` | — (signed URL) | Verify email address → redirects to `/dashboard?verified=1` |
+| POST | `/api/auth/resend-verification` | ✓ | Resend verification email (throttled: 5/5min) |
+| POST | `/api/auth/google/link-token` | ✓ | Generate a link-token for connecting Google to the current account |
+| GET | `/auth/google/link` | — | OAuth link redirect (web route) — requires `?token=` from link-token endpoint |
 | DELETE | `/api/auth/account` | ✓ | Delete account and all data permanently |
+| GET | `/api/health` | — | Healthcheck: DB, cache, queue table |
+
+### Subscriptions
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/api/subscriptions/checkout` | ✓ | Create Stripe Checkout session for Pro/Business plan (`plan`, `interval`) |
+| POST | `/api/subscriptions/portal` | ✓ | Open Stripe Billing Portal (manage/cancel subscription) |
 
 ### Events
 | Method | Endpoint | Description |
@@ -347,8 +384,8 @@ resources/js/
 
 ## Roadmap
 
-### Phase 2 (planned)
-- Pro/Business subscriptions via Stripe
+### Phase 2 (in progress)
+- ✅ Pro/Business subscriptions via Stripe recurring billing
 - Sub-event support (sessions, breakouts)
 - Attachment support for events
 - Analytics dashboard

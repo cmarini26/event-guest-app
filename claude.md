@@ -36,8 +36,8 @@
 
 ## Build Status
 
-- **Phase 1: COMPLETE** — all features implemented, production-hardened, 87 tests passing
-- **Phase 2: NOT STARTED** — Pro/Business subscriptions, sub-events, analytics, custom domains
+- **Phase 1: COMPLETE** — all features implemented, production-hardened, 127 tests passing
+- **Phase 2: SUBSCRIPTIONS SHIPPED** — recurring Pro/Business plans via Cashier + Stripe; sub-events, analytics, custom domains not started
 - **Phase 3: NOT STARTED** — White-label, API tier, Capacitor mobile
 
 ## Implemented Features (Phase 1)
@@ -50,8 +50,10 @@
 - Plus-ones with dietary preferences
 - Preference collection: dietary, accessibility, seating, phone
 - Automatic waitlisting when `isAtCapacity()` is true
+- Waitlist auto-promotion: `Event::promoteFirstWaitlisted()` fires when an attending guest declines or is deleted; sends `WaitlistPromotion` notification to the next guest in line (ordered by `responded_at`)
 - Email invitations (queued via `GuestInvitation` notification)
 - Host RSVP notifications (queued via `RsvpReceived` notification)
+- Guest RSVP confirmation emails (queued via `RsvpConfirmation` notification): attending, waitlisted, and declined variants; only sent when guest has an email address
 - Bulk invite (single bulk UPDATE, not N+1)
 - Stripe Event Pass checkout + webhook verification
 - Free tier enforcement (3 active events, 50 guests)
@@ -74,7 +76,7 @@
 - Google OAuth sign-in (Laravel Socialite) — links to existing email/password accounts
 - Account settings page (`/settings`): update name/email (email requires password confirmation), change password (revokes other sessions), connected accounts (Google link status), account deletion with cascade
 - Privacy Policy (`/privacy`) and Terms of Service (`/terms`) — required for production launch
-- Professional landing page with product screenshot mockup (Hero, Features, How it works, Pricing, CTA)
+- Professional landing page with product screenshot mockup (Hero, Features, How it works, Pricing, CTA); pricing shows Free ($0), Event Pass ($19/event), Pro ($29/month)
 - 404 page in Vue router
 - Event date/time shown correctly using wall-clock time semantics (UTC display + timezone label) in host view, RSVP page, and guest invitation emails
 - Timezone selector on Create/Edit event forms (full IANA list via `Intl.supportedValuesOf`); defaults to browser timezone
@@ -87,6 +89,17 @@
 - `robots.txt` blocks /dashboard, /events, /settings, /auth/, /rsvp/ from indexing
 - `has_password` and `has_google` returned from `me()`, `register`, `login` responses
 - `APP_TIMEZONE=UTC` in `.env.example` — wall-clock time semantics depend on UTC app timezone
+- Google-only users who try to change their email get a `422` with `errors.email` = "Set a password before changing your email address." — not the generic "Current password is incorrect."
+- RSVP `respond()`: already-attending guests are exempt from the capacity check when re-submitting (updating preferences at a full event will not bump them to waitlisted)
+- `ends_at` and `starts_at` server validation errors are shown on Create/Edit event forms via `errors.ends_at` / `errors.starts_at`
+- `EventDetailPage.vue` guest table uses a single merged `:class` binding — duplicate `:class` on the same `<tr>` silently drops the first binding in Vue 3
+- Admin panel at `/admin` — read-only; `users.is_admin` boolean gates access; `AdminMiddleware` returns 403 for non-admins; `is_admin` included in all auth responses (`me()`, `login()`, `register()`, `updateProfile()`); grant admin via `php artisan admin:promote email@example.com`
+- Email verification: `users.email_verified_at` (nullable) — `User` implements `MustVerifyEmail`; queued `App\Notifications\VerifyEmail` sent on registration; `GET /api/auth/verify-email/{id}/{hash}` (signed, named `verification.verify`) verifies and redirects to `/dashboard?verified=1`; `POST /api/auth/resend-verification` (auth:sanctum, throttle:5,5) resends; `email_verified` bool in all auth responses; AppLayout shows amber banner + resend button when unverified; Google OAuth users auto-verified on sign-in
+- Google OAuth account linking fix: `POST /api/auth/google/link-token` (auth:sanctum) generates a 5-min cache token → `GET /auth/google/link?token=xxx` (web route) stores `link_user_id` in session → callback checks session and links Google ID to the authenticated user's account instead of creating a new one; handles `google_already_linked` and `link_expired` error cases in the settings UI
+- Admin panel extended: `GET /api/admin/users/{user}/events` returns user's events with guest/attending counts; `POST /api/admin/users/{user}/toggle-admin` toggles is_admin (blocked for self); admin stats now include `failed_jobs` count; AdminDashboardPage shows failed-jobs alert banner, expandable user rows with event list, and is_admin toggle buttons
+- `GET /api/health` — public healthcheck endpoint; checks database, cache, and queue_table; returns `{status: ok|degraded, database, cache, queue_table}`; returns 503 on any failure
+- `php artisan admin:promote {email}` — console command to grant admin access (safer than tinker in production)
+- Pro/Business subscriptions: `POST /api/subscriptions/checkout` + `POST /api/subscriptions/portal` (auth:sanctum); `SubscriptionController::planForPriceId()` maps Stripe price IDs → plan names; webhooks handle `customer.subscription.created/updated/deleted` → sync `users.plan`; settings page shows upgrade cards (Monthly/Annual) for free/event_pass users, "Manage subscription" portal link for pro/business; price IDs configured via `STRIPE_PRO_MONTHLY_PRICE_ID`, `STRIPE_PRO_ANNUAL_PRICE_ID`, `STRIPE_BUSINESS_MONTHLY_PRICE_ID`, `STRIPE_BUSINESS_ANNUAL_PRICE_ID`
 
 ## Testing
 
@@ -96,9 +109,9 @@ Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`).
 php artisan test
 ```
 
-**87 tests, 201 assertions. Always run before reporting a task complete. Never suppress failures.**
+**127 tests, 312 assertions. Always run before reporting a task complete. Never suppress failures.**
 
-Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`
+Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`, `AdminTest`
 
 ## Development Workflow
 
@@ -114,8 +127,9 @@ Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `Pas
 - `abort_unless` in controllers returns JSON when `X-Requested-With: XMLHttpRequest` is set (Axios sets this automatically)
 - `effectiveGuestLimit()` on Event uses `$this->user?->guestLimit()` with nullable-safe chaining — `user` may not be loaded
 - Stripe webhook endpoint at `/api/webhooks/stripe` is outside the Sanctum middleware group (public)
-- `GuestInvitation` and `RsvpReceived` both implement `ShouldQueue` — start `php artisan queue:work` in dev
-- Google OAuth: `GET /auth/google/redirect` + `GET /auth/google/callback` are **web routes** (not API) — OAuth flows require browser redirects. Callback generates a Sanctum token and redirects to `/auth/callback?token=xxx` in the SPA.
+- `GuestInvitation`, `RsvpReceived`, `RsvpConfirmation`, and `WaitlistPromotion` all implement `ShouldQueue` — start `php artisan queue:work` in dev
+- Google OAuth: `GET /auth/google/redirect` + `GET /auth/google/link` + `GET /auth/google/callback` are **web routes** (not API) — OAuth flows require browser redirects. Callback generates a Sanctum token and redirects to `/auth/callback?token=xxx` in the SPA. `/auth/google/link` is the account-linking flow for authenticated users in settings.
+- `App\Notifications\VerifyEmail` extends the base Laravel `VerifyEmail` notification and adds `ShouldQueue` — uses the queued mail driver. `VerifyEmail::createUrlUsing()` in `AppServiceProvider` points the signed URL to the named route `verification.verify` in the API.
 - `AuthCallbackPage.vue` at `/auth/callback` reads the token, calls `auth.loginWithToken()`, then navigates to dashboard. `loginWithToken()` clears `_fetchPromise` before re-fetching to avoid stale cache.
 
 ## Deployment Quick Reference

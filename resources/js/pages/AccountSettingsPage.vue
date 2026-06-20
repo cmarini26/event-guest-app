@@ -12,6 +12,9 @@ const deleteError = ref('');
 const deleteLoading = ref(false);
 const showDeleteConfirm = ref(false);
 
+const connectingGoogle = ref(false);
+const googleLinkError = ref('');
+
 const profile = reactive({ name: '', email: '', current_password: '' });
 const profileErrors = ref({});
 const profileSuccess = ref('');
@@ -27,9 +30,24 @@ const setPasswordErrors = ref({});
 const setPasswordSuccess = ref('');
 const setPasswordLoading = ref(false);
 
+const upgradingTo = ref('');
+const upgradeError = ref('');
+const openingPortal = ref(false);
+const subscriptionMessage = ref('');
+
 onMounted(() => {
     profile.name = auth.user?.name ?? '';
     profile.email = auth.user?.email ?? '';
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'google_already_linked') {
+        googleLinkError.value = 'That Google account is already linked to another account.';
+    } else if (params.get('error') === 'link_expired') {
+        googleLinkError.value = 'The connection link expired. Please try again.';
+    }
+    if (params.get('subscription') === 'success') {
+        subscriptionMessage.value = 'Subscription activated! Your plan has been upgraded.';
+    }
 });
 
 async function saveProfile() {
@@ -100,6 +118,41 @@ async function setPassword() {
         }
     } finally {
         setPasswordLoading.value = false;
+    }
+}
+
+async function upgradePlan(plan, interval) {
+    upgradingTo.value = `${plan}_${interval}`;
+    upgradeError.value = '';
+    try {
+        const { data } = await axios.post('/api/subscriptions/checkout', { plan, interval });
+        window.location.href = data.checkout_url;
+    } catch (err) {
+        upgradeError.value = err.response?.data?.message ?? 'Failed to start checkout. Please try again.';
+        upgradingTo.value = '';
+    }
+}
+
+async function openBillingPortal() {
+    openingPortal.value = true;
+    try {
+        const { data } = await axios.post('/api/subscriptions/portal');
+        window.location.href = data.portal_url;
+    } catch (err) {
+        upgradeError.value = err.response?.data?.message ?? 'Failed to open billing portal.';
+        openingPortal.value = false;
+    }
+}
+
+async function connectGoogle() {
+    connectingGoogle.value = true;
+    googleLinkError.value = '';
+    try {
+        const { data } = await axios.post('/api/auth/google/link-token');
+        window.location.href = data.redirect_url;
+    } catch {
+        connectingGoogle.value = false;
+        googleLinkError.value = 'Failed to initiate Google connection. Please try again.';
     }
 }
 
@@ -204,12 +257,13 @@ async function deleteAccount() {
                         <div class="text-xs text-gray-500">{{ auth.user?.has_google ? 'Connected' : 'Not connected' }}</div>
                     </div>
                 </div>
-                <a v-if="!auth.user?.has_google" href="/auth/google/redirect"
-                    class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                    Connect
-                </a>
+                <button v-if="!auth.user?.has_google" @click="connectGoogle" :disabled="connectingGoogle"
+                    class="text-sm text-indigo-600 hover:text-indigo-700 font-medium disabled:opacity-50">
+                    {{ connectingGoogle ? 'Connecting...' : 'Connect' }}
+                </button>
                 <span v-else class="text-xs text-green-600 font-medium">✓ Active</span>
             </div>
+            <p v-if="googleLinkError" class="mt-3 text-sm text-red-600">{{ googleLinkError }}</p>
         </section>
 
         <!-- Set password (Google-only accounts) -->
@@ -241,7 +295,13 @@ async function deleteAccount() {
         <!-- Plan -->
         <section class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
             <h2 class="text-base font-semibold text-gray-900 mb-4">Plan</h2>
-            <div class="flex items-center justify-between">
+
+            <p v-if="subscriptionMessage" class="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                {{ subscriptionMessage }}
+            </p>
+
+            <!-- Current plan badge -->
+            <div class="flex items-center justify-between mb-4">
                 <div>
                     <p class="text-sm font-medium text-gray-900 capitalize">
                         {{ auth.user?.plan?.replace('_', ' ') ?? 'free' }}
@@ -252,10 +312,54 @@ async function deleteAccount() {
                         <template v-else>Unlimited guests · Unlimited events</template>
                     </p>
                 </div>
-                <span v-if="auth.user?.plan === 'free'" class="text-xs text-indigo-600 font-medium">
-                    Pro plan coming soon
-                </span>
+                <button v-if="['pro', 'business'].includes(auth.user?.plan)"
+                    @click="openBillingPortal" :disabled="openingPortal"
+                    class="text-sm text-indigo-600 hover:text-indigo-700 font-medium disabled:opacity-50">
+                    {{ openingPortal ? 'Opening...' : 'Manage subscription' }}
+                </button>
             </div>
+
+            <!-- Upgrade options (shown for free / event_pass users) -->
+            <template v-if="!['pro', 'business'].includes(auth.user?.plan)">
+                <p class="text-xs text-gray-500 mb-3 font-medium uppercase tracking-wide">Upgrade</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <!-- Pro -->
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <p class="text-sm font-semibold text-gray-900 mb-0.5">Pro</p>
+                        <p class="text-xs text-gray-500 mb-3">Unlimited guests · Unlimited events</p>
+                        <div class="flex gap-2">
+                            <button @click="upgradePlan('pro', 'monthly')"
+                                :disabled="upgradingTo !== ''"
+                                class="flex-1 text-xs font-medium py-1.5 px-2 border border-indigo-600 text-indigo-600 hover:bg-indigo-50 rounded-lg disabled:opacity-50">
+                                {{ upgradingTo === 'pro_monthly' ? 'Redirecting...' : 'Monthly' }}
+                            </button>
+                            <button @click="upgradePlan('pro', 'annual')"
+                                :disabled="upgradingTo !== ''"
+                                class="flex-1 text-xs font-medium py-1.5 px-2 border border-indigo-600 text-indigo-600 hover:bg-indigo-50 rounded-lg disabled:opacity-50">
+                                {{ upgradingTo === 'pro_annual' ? 'Redirecting...' : 'Annual' }}
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Business -->
+                    <div class="border border-gray-200 rounded-xl p-4">
+                        <p class="text-sm font-semibold text-gray-900 mb-0.5">Business</p>
+                        <p class="text-xs text-gray-500 mb-3">Everything in Pro · Priority support</p>
+                        <div class="flex gap-2">
+                            <button @click="upgradePlan('business', 'monthly')"
+                                :disabled="upgradingTo !== ''"
+                                class="flex-1 text-xs font-medium py-1.5 px-2 border border-purple-600 text-purple-600 hover:bg-purple-50 rounded-lg disabled:opacity-50">
+                                {{ upgradingTo === 'business_monthly' ? 'Redirecting...' : 'Monthly' }}
+                            </button>
+                            <button @click="upgradePlan('business', 'annual')"
+                                :disabled="upgradingTo !== ''"
+                                class="flex-1 text-xs font-medium py-1.5 px-2 border border-purple-600 text-purple-600 hover:bg-purple-50 rounded-lg disabled:opacity-50">
+                                {{ upgradingTo === 'business_annual' ? 'Redirecting...' : 'Annual' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p v-if="upgradeError" class="mt-3 text-sm text-red-600">{{ upgradeError }}</p>
+            </template>
         </section>
 
         <!-- Danger zone -->
