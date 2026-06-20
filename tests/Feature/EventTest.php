@@ -138,6 +138,19 @@ class EventTest extends TestCase
             ->assertJsonFragment(['status' => 'archived']);
     }
 
+    public function test_ends_at_must_be_after_starts_at_on_update(): void
+    {
+        $user = User::factory()->create();
+        $event = $this->makeEvent($user, ['starts_at' => '2026-12-01 18:00:00']);
+
+        $this->actingAs($user, 'sanctum')
+            ->putJson("/api/events/{$event->id}", [
+                'ends_at' => '2026-12-01 17:00:00',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('ends_at');
+    }
+
     public function test_rsvp_deadline_must_be_before_start(): void
     {
         $user = User::factory()->create();

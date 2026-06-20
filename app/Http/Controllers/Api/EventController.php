@@ -87,16 +87,20 @@ class EventController extends Controller
             'require_phone' => ['boolean'],
         ]);
 
-        if (! empty($data['rsvp_deadline'])) {
-            $effectiveStart = isset($data['starts_at'])
-                ? \Carbon\Carbon::parse($data['starts_at'])
-                : $event->starts_at;
+        $effectiveStart = isset($data['starts_at'])
+            ? \Carbon\Carbon::parse($data['starts_at'])
+            : $event->starts_at;
 
-            if (\Carbon\Carbon::parse($data['rsvp_deadline'])->gte($effectiveStart)) {
-                throw \Illuminate\Validation\ValidationException::withMessages([
-                    'rsvp_deadline' => ['The RSVP deadline must be before the event start time.'],
-                ]);
-            }
+        if (! empty($data['ends_at']) && \Carbon\Carbon::parse($data['ends_at'])->lte($effectiveStart)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'ends_at' => ['The end time must be after the start time.'],
+            ]);
+        }
+
+        if (! empty($data['rsvp_deadline']) && \Carbon\Carbon::parse($data['rsvp_deadline'])->gte($effectiveStart)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'rsvp_deadline' => ['The RSVP deadline must be before the event start time.'],
+            ]);
         }
 
         $event->update($data);
