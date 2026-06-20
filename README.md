@@ -94,6 +94,7 @@ Collect RSVPs, track dietary and accessibility preferences, send invitation emai
 - App.vue loading gate prevents unauthenticated flash while session is being verified
 - CORS restricted to `APP_URL`
 - Security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `Strict-Transport-Security` (HTTPS only)
+- Content Security Policy (production): `default-src 'self'` — restricts all external content; `frame-ancestors 'none'` enforces no iframe embedding at the CSP level
 - Global 401 interceptor in the SPA → clears session and redirects to login
 - State guards on all status transitions
 - DB indexes on `events(status)`, `events(user_id, status)`, `guests(rsvp_status)`, `guests(event_id, rsvp_status)`, `guests(email)`, `guests(invited_at)`

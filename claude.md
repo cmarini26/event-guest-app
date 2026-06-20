@@ -82,7 +82,8 @@
 - EventDetailPage stats grid shows all 5 states: total, attending, declined, pending, waitlisted
 - Guest management actions (Invite, Invite all, Add guest) hidden on archived events
 - AccountSettingsPage shows current plan with limits; Change Password hidden for Google-only users; Set Password form shown instead
-- `X-Frame-Options: DENY` (stricter than SAMEORIGIN)
+- `X-Frame-Options: DENY` (stricter than SAMEORIGIN) + `frame-ancestors 'none'` in CSP
+- Content Security Policy (production-only): `default-src 'self'`; `style-src 'self' 'unsafe-inline'` (Vue :style bindings require this); `img-src 'self' data:`; `object-src 'none'`; `base-uri 'self'`; `form-action 'self'`
 - `robots.txt` blocks /dashboard, /events, /settings, /auth/, /rsvp/ from indexing
 - `has_password` and `has_google` returned from `me()`, `register`, `login` responses
 - `APP_TIMEZONE=UTC` in `.env.example` — wall-clock time semantics depend on UTC app timezone

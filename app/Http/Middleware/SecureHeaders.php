@@ -26,6 +26,21 @@ class SecureHeaders
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
         }
 
+        // CSP only in production — Vite HMR injects inline scripts that would break in dev.
+        // 'unsafe-inline' for style-src is required for Vue's dynamic :style bindings.
+        if (app()->isProduction()) {
+            $response->headers->set(
+                'Content-Security-Policy',
+                "default-src 'self'; " .
+                "style-src 'self' 'unsafe-inline'; " .
+                "img-src 'self' data:; " .
+                "object-src 'none'; " .
+                "base-uri 'self'; " .
+                "form-action 'self'; " .
+                "frame-ancestors 'none';"
+            );
+        }
+
         return $response;
     }
 }
