@@ -384,12 +384,12 @@ resources/js/
 
 ## Roadmap
 
-### Phase 2 (in progress)
+### Phase 2 (complete)
 - ✅ Pro/Business subscriptions via Stripe recurring billing
-- Sub-event support (sessions, breakouts)
-- Attachment support for events
-- Analytics dashboard
-- Custom domain support
+- ✅ Sub-event support (sessions, breakouts)
+- ✅ Attachment support for events
+- ✅ Analytics dashboard
+- ✅ Custom domain support
 
 ### Phase 3 (future)
 - White-label mode

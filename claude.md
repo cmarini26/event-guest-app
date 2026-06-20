@@ -37,8 +37,15 @@
 ## Build Status
 
 - **Phase 1: COMPLETE** — all features implemented, production-hardened, 127 tests passing
-- **Phase 2: SUBSCRIPTIONS SHIPPED** — recurring Pro/Business plans via Cashier + Stripe; sub-events, analytics, custom domains not started
+- **Phase 2: COMPLETE** — recurring Pro/Business subscriptions (Cashier + Stripe), analytics dashboard, sub-events (sessions/breakouts), event file attachments, and custom domains all shipped; 162 tests passing
 - **Phase 3: NOT STARTED** — White-label, API tier, Capacitor mobile
+
+## Phase 2 Features
+
+- **Analytics** (`AnalyticsController`): `GET /api/events/{event}/analytics` — totals (invited, responded, response_rate, acceptance_rate, plus_ones, expected_headcount), RSVP breakdown, dietary/seating breakdowns, accessibility count, cumulative response timeline. Aggregation done in PHP (not SQL) so it works identically on SQLite (tests) and PostgreSQL (prod). Authorized via `EventPolicy::view`. Frontend: `EventAnalyticsPage.vue` at `/events/:id/analytics`.
+- **Sub-events** (`SubEventController`, `sub_events` table): sessions/breakouts within an event. Full CRUD under `/api/events/{event}/sub-events`. Window validation — a session must start ≥ event `starts_at` and end ≤ event `ends_at`. `Event::subEvents()` ordered by `sort_order` then `starts_at`. Frontend: `EventSchedulePage.vue` at `/events/:id/schedule`.
+- **Attachments** (`AttachmentController`, `attachments` table): file uploads on the `public` disk under `attachments/{event_id}/`. Max 10 files/event, 10 MB each, whitelisted mime types (pdf/images/office/csv/txt). `Attachment` model exposes a `url` accessor and auto-deletes the underlying file on record delete (`booted()` deleting hook). Requires `php artisan storage:link`. Frontend: `EventFilesPage.vue` at `/events/:id/files`.
+- **Custom domains** (`CustomDomainController`, `custom_domains` table): account-level, gated to pro/business via `User::canUseCustomDomains()`. Ownership proven by a DNS TXT record at `_guestlist-verify.{domain}` with value `guestlist-verify={token}`. DNS lookup is behind the swappable `App\Services\DnsVerifier` contract (`SystemDnsVerifier` uses `dns_get_record`; bound in `AppServiceProvider::register`) so tests inject a fake. Routes `/api/custom-domains` (+ `/{id}/verify`). Frontend: `CustomDomainsPage.vue` at `/settings/domains`, linked from Account Settings for pro/business. NOTE: TLS termination + request routing for the custom hostname is deployment infra (reverse proxy / ACME), not handled in-app.
 
 ## Implemented Features (Phase 1)
 
