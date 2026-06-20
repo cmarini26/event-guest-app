@@ -279,6 +279,12 @@ onMounted(load);
                 </button>
 
                 <RouterLink
+                    :to="{ name: 'events.schedule', params: { id: event.id } }"
+                    class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                    Schedule
+                </RouterLink>
+                <RouterLink
                     :to="{ name: 'events.analytics', params: { id: event.id } }"
                     class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                 >

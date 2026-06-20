@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\PasswordResetController;
 use App\Http\Controllers\Api\RsvpController;
 use App\Http\Controllers\Api\StripeWebhookController;
+use App\Http\Controllers\Api\SubEventController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
@@ -59,6 +60,12 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
 
     Route::prefix('events/{event}')->group(function () {
         Route::get('analytics', [AnalyticsController::class, 'show']);
+
+        Route::get('sub-events', [SubEventController::class, 'index']);
+        Route::post('sub-events', [SubEventController::class, 'store']);
+        Route::put('sub-events/{subEvent}', [SubEventController::class, 'update']);
+        Route::delete('sub-events/{subEvent}', [SubEventController::class, 'destroy']);
+
         Route::get('guests', [GuestController::class, 'index']);
         Route::get('guests/export', [GuestController::class, 'export']);
         Route::post('guests', [GuestController::class, 'store']);
