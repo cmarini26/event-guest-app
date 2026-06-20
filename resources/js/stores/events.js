@@ -52,5 +52,10 @@ export const useEventsStore = defineStore('events', () => {
         return data;
     }
 
-    return { events, loading, fetchError, fetchEvents, createEvent, updateEvent, deleteEvent, publishEvent, archiveEvent };
+    async function fetchAnalytics(id) {
+        const { data } = await axios.get(`/api/events/${id}/analytics`);
+        return data;
+    }
+
+    return { events, loading, fetchError, fetchEvents, createEvent, updateEvent, deleteEvent, publishEvent, archiveEvent, fetchAnalytics };
 });

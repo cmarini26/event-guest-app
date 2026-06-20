@@ -27,6 +27,7 @@ const routes = [
             { path: '/events/create', name: 'events.create', component: () => import('@/pages/events/CreateEventPage.vue') },
             { path: '/events/:id', name: 'events.show', component: () => import('@/pages/events/EventDetailPage.vue') },
             { path: '/events/:id/edit', name: 'events.edit', component: () => import('@/pages/events/EditEventPage.vue') },
+            { path: '/events/:id/analytics', name: 'events.analytics', component: () => import('@/pages/events/EventAnalyticsPage.vue') },
             { path: '/admin', name: 'admin', meta: { requiresAdmin: true }, component: () => import('@/pages/admin/AdminDashboardPage.vue') },
         ],
     },

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventCheckoutController;
 use App\Http\Controllers\Api\EventController;
@@ -57,6 +58,7 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::post('subscriptions/portal', [SubscriptionController::class, 'portal']);
 
     Route::prefix('events/{event}')->group(function () {
+        Route::get('analytics', [AnalyticsController::class, 'show']);
         Route::get('guests', [GuestController::class, 'index']);
         Route::get('guests/export', [GuestController::class, 'export']);
         Route::post('guests', [GuestController::class, 'store']);
