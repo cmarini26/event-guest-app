@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\EventCheckoutController;
 use App\Http\Controllers\Api\EventController;
@@ -65,6 +66,10 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
         Route::post('sub-events', [SubEventController::class, 'store']);
         Route::put('sub-events/{subEvent}', [SubEventController::class, 'update']);
         Route::delete('sub-events/{subEvent}', [SubEventController::class, 'destroy']);
+
+        Route::get('attachments', [AttachmentController::class, 'index']);
+        Route::post('attachments', [AttachmentController::class, 'store']);
+        Route::delete('attachments/{attachment}', [AttachmentController::class, 'destroy']);
 
         Route::get('guests', [GuestController::class, 'index']);
         Route::get('guests/export', [GuestController::class, 'export']);

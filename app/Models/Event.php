@@ -82,6 +82,11 @@ class Event extends Model
         return $this->hasMany(SubEvent::class)->orderBy('sort_order')->orderBy('starts_at');
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(Attachment::class);
+    }
+
     public function hasEventPass(): bool
     {
         return $this->event_pass_paid_at !== null;

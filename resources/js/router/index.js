@@ -29,6 +29,7 @@ const routes = [
             { path: '/events/:id/edit', name: 'events.edit', component: () => import('@/pages/events/EditEventPage.vue') },
             { path: '/events/:id/analytics', name: 'events.analytics', component: () => import('@/pages/events/EventAnalyticsPage.vue') },
             { path: '/events/:id/schedule', name: 'events.schedule', component: () => import('@/pages/events/EventSchedulePage.vue') },
+            { path: '/events/:id/files', name: 'events.files', component: () => import('@/pages/events/EventFilesPage.vue') },
             { path: '/admin', name: 'admin', meta: { requiresAdmin: true }, component: () => import('@/pages/admin/AdminDashboardPage.vue') },
         ],
     },
