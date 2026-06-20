@@ -36,6 +36,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Event::class);
     }
 
+    public function customDomains(): HasMany
+    {
+        return $this->hasMany(CustomDomain::class);
+    }
+
+    public function canUseCustomDomains(): bool
+    {
+        return in_array($this->plan, ['pro', 'business'], true);
+    }
+
     public function canCreateEvent(): bool
     {
         return match ($this->plan) {

@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CustomDomainController;
 use App\Http\Controllers\Api\EventCheckoutController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GuestController;
@@ -58,6 +59,11 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::post('events/{event}/checkout', [EventCheckoutController::class, 'create']);
     Route::post('subscriptions/checkout', [SubscriptionController::class, 'checkout']);
     Route::post('subscriptions/portal', [SubscriptionController::class, 'portal']);
+
+    Route::get('custom-domains', [CustomDomainController::class, 'index']);
+    Route::post('custom-domains', [CustomDomainController::class, 'store']);
+    Route::post('custom-domains/{customDomain}/verify', [CustomDomainController::class, 'verify']);
+    Route::delete('custom-domains/{customDomain}', [CustomDomainController::class, 'destroy']);
 
     Route::prefix('events/{event}')->group(function () {
         Route::get('analytics', [AnalyticsController::class, 'show']);

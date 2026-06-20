@@ -14,7 +14,13 @@ use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
-    public function register(): void {}
+    public function register(): void
+    {
+        $this->app->bind(
+            \App\Services\DnsVerifier::class,
+            \App\Services\SystemDnsVerifier::class
+        );
+    }
 
     public function boot(): void
     {

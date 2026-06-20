@@ -1,6 +1,6 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
 import { useAuthStore } from '@/stores/auth.js';
 import axios from 'axios';
 
@@ -360,6 +360,19 @@ async function deleteAccount() {
                 </div>
                 <p v-if="upgradeError" class="mt-3 text-sm text-red-600">{{ upgradeError }}</p>
             </template>
+        </section>
+
+        <!-- Custom domains (Pro/Business) -->
+        <section v-if="['pro', 'business'].includes(auth.user?.plan)"
+            class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-1">Custom Domains</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Serve your RSVP pages from your own domain.
+            </p>
+            <RouterLink :to="{ name: 'custom-domains' }"
+                class="inline-block text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                Manage custom domains →
+            </RouterLink>
         </section>
 
         <!-- Danger zone -->
