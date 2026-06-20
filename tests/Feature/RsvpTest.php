@@ -5,7 +5,9 @@ namespace Tests\Feature;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\User;
+use App\Notifications\RsvpConfirmation;
 use App\Notifications\RsvpReceived;
+use App\Notifications\WaitlistPromotion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -229,5 +231,100 @@ class RsvpTest extends TestCase
         $this->getJson("/api/rsvp/{$guest->rsvp_token}")
             ->assertOk()
             ->assertJsonPath('event.rsvp_deadline', fn ($v) => $v !== null);
+    }
+
+    public function test_attending_guest_can_update_preferences_at_full_event(): void
+    {
+        $event = $this->makeEvent(['max_guests' => 1, 'collect_dietary' => true]);
+        $guest = $this->makeGuest($event, ['rsvp_status' => 'attending']);
+
+        // Event is at capacity, but this guest is already attending — should stay attending
+        $this->postJson("/api/rsvp/{$guest->rsvp_token}", [
+            'status' => 'attending',
+            'dietary_preference' => 'vegan',
+        ])->assertOk()->assertJsonFragment(['status' => 'attending']);
+
+        $this->assertDatabaseHas('guests', ['id' => $guest->id, 'rsvp_status' => 'attending', 'dietary_preference' => 'vegan']);
+    }
+
+    public function test_guest_receives_confirmation_email_on_rsvp(): void
+    {
+        Notification::fake();
+
+        $event = $this->makeEvent();
+        $guest = $this->makeGuest($event, ['email' => 'guest@example.com']);
+
+        $this->postJson("/api/rsvp/{$guest->rsvp_token}", ['status' => 'attending'])
+            ->assertOk();
+
+        Notification::assertSentTo($guest, RsvpConfirmation::class, function ($n) use ($guest) {
+            return $n->guest->id === $guest->id && $n->guest->rsvp_status === 'attending';
+        });
+    }
+
+    public function test_waitlisted_guest_receives_waitlist_confirmation(): void
+    {
+        Notification::fake();
+
+        $event = $this->makeEvent(['max_guests' => 1]);
+        $this->makeGuest($event, ['rsvp_status' => 'attending']);
+        $guest = $this->makeGuest($event, ['email' => 'guest@example.com']);
+
+        $this->postJson("/api/rsvp/{$guest->rsvp_token}", ['status' => 'attending'])
+            ->assertOk()
+            ->assertJsonFragment(['status' => 'waitlisted']);
+
+        Notification::assertSentTo($guest, RsvpConfirmation::class, function ($n) use ($guest) {
+            return $n->guest->rsvp_status === 'waitlisted';
+        });
+    }
+
+    public function test_no_confirmation_sent_when_guest_has_no_email(): void
+    {
+        Notification::fake();
+
+        $event = $this->makeEvent();
+        $guest = $this->makeGuest($event, ['email' => null]);
+
+        $this->postJson("/api/rsvp/{$guest->rsvp_token}", ['status' => 'attending'])
+            ->assertOk();
+
+        Notification::assertNothingSentTo($guest);
+    }
+
+    public function test_declining_attendee_promotes_waitlisted_guest(): void
+    {
+        Notification::fake();
+
+        $event = $this->makeEvent(['max_guests' => 1]);
+        $attendee = $this->makeGuest($event, ['rsvp_status' => 'attending']);
+        $waitlisted = $this->makeGuest($event, [
+            'rsvp_status' => 'waitlisted',
+            'responded_at' => now()->subMinutes(5),
+            'email' => 'waitlisted@example.com',
+        ]);
+
+        $this->postJson("/api/rsvp/{$attendee->rsvp_token}", ['status' => 'declined'])
+            ->assertOk();
+
+        $this->assertDatabaseHas('guests', ['id' => $waitlisted->id, 'rsvp_status' => 'attending']);
+        Notification::assertSentTo($waitlisted, WaitlistPromotion::class);
+    }
+
+    public function test_declining_from_non_attending_does_not_promote_waitlist(): void
+    {
+        Notification::fake();
+
+        $event = $this->makeEvent(['max_guests' => 1]);
+        $attending = $this->makeGuest($event, ['rsvp_status' => 'attending']);
+        $pending = $this->makeGuest($event, ['rsvp_status' => 'pending']);
+        $waitlisted = $this->makeGuest($event, ['rsvp_status' => 'waitlisted']);
+
+        // pending guest declines — should not promote waitlisted (slot was never held)
+        $this->postJson("/api/rsvp/{$pending->rsvp_token}", ['status' => 'declined'])
+            ->assertOk();
+
+        $this->assertDatabaseHas('guests', ['id' => $waitlisted->id, 'rsvp_status' => 'waitlisted']);
+        Notification::assertNotSentTo($waitlisted, WaitlistPromotion::class);
     }
 }

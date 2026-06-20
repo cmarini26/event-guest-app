@@ -119,4 +119,26 @@ class Event extends Model
         }
         return $this->attendingCount() >= $limit;
     }
+
+    public function promoteFirstWaitlisted(): void
+    {
+        if ($this->status !== 'published') {
+            return;
+        }
+
+        $guest = $this->guests()
+            ->where('rsvp_status', 'waitlisted')
+            ->orderBy('responded_at')
+            ->first();
+
+        if (! $guest) {
+            return;
+        }
+
+        $guest->update(['rsvp_status' => 'attending']);
+
+        if ($guest->email) {
+            $guest->notify(new \App\Notifications\WaitlistPromotion($this));
+        }
+    }
 }

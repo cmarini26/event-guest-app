@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Guest;
 use App\Models\PlusOne;
+use App\Notifications\RsvpConfirmation;
 use App\Notifications\RsvpReceived;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -74,9 +75,13 @@ class RsvpController extends Controller
 
         $status = $data['status'];
 
-        if ($status === 'attending' && $event->isAtCapacity()) {
+        // Only waitlist if the guest isn't already attending — an existing attendee
+        // updating preferences would otherwise get bumped out of a full event.
+        if ($status === 'attending' && $guest->rsvp_status !== 'attending' && $event->isAtCapacity()) {
             $status = 'waitlisted';
         }
+
+        $wasAttending = $guest->rsvp_status === 'attending';
 
         $guest->update([
             'rsvp_status' => $status,
@@ -97,7 +102,18 @@ class RsvpController extends Controller
             $guest->plusOnes()->delete();
         }
 
+        // Notify the host
         $event->user->notify(new RsvpReceived($guest, $event));
+
+        // Confirm to the guest (only if they have an email)
+        if ($guest->email) {
+            $guest->notify(new RsvpConfirmation($guest, $event));
+        }
+
+        // Open slot: promote first waitlisted guest
+        if ($wasAttending && $status === 'declined') {
+            $event->promoteFirstWaitlisted();
+        }
 
         return response()->json([
             'status' => $status,

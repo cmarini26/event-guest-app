@@ -73,7 +73,13 @@ class GuestController extends Controller
         $this->authorize('update', $event);
         abort_unless($guest->event_id === $event->id, 404);
 
+        $wasAttending = $guest->rsvp_status === 'attending';
+
         $guest->delete();
+
+        if ($wasAttending) {
+            $event->promoteFirstWaitlisted();
+        }
 
         return response()->json(null, 204);
     }

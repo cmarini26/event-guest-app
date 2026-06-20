@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\Guest;
 use App\Models\User;
 use App\Notifications\GuestInvitation;
+use App\Notifications\WaitlistPromotion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -218,5 +219,45 @@ class GuestTest extends TestCase
             ->assertJsonFragment(['message' => 'Invitations sent to 2 guest(s).']);
 
         Notification::assertCount(2);
+    }
+
+    public function test_deleting_attending_guest_promotes_waitlisted(): void
+    {
+        Notification::fake();
+
+        $user  = User::factory()->create();
+        $event = $this->makeEvent($user, ['status' => 'published', 'max_guests' => 1]);
+        $attending  = $this->makeGuest($event, ['rsvp_status' => 'attending']);
+        $waitlisted = $this->makeGuest($event, [
+            'rsvp_status' => 'waitlisted',
+            'responded_at' => now()->subMinutes(5),
+            'email' => 'waitlist@example.com',
+        ]);
+
+        $this->actingAs($user, 'sanctum')
+            ->deleteJson("/api/events/{$event->id}/guests/{$attending->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseMissing('guests', ['id' => $attending->id]);
+        $this->assertDatabaseHas('guests', ['id' => $waitlisted->id, 'rsvp_status' => 'attending']);
+        Notification::assertSentTo($waitlisted, WaitlistPromotion::class);
+    }
+
+    public function test_deleting_non_attending_guest_does_not_promote_waitlist(): void
+    {
+        Notification::fake();
+
+        $user  = User::factory()->create();
+        $event = $this->makeEvent($user, ['status' => 'published', 'max_guests' => 1]);
+        $attending  = $this->makeGuest($event, ['rsvp_status' => 'attending']);
+        $pending    = $this->makeGuest($event, ['rsvp_status' => 'pending']);
+        $waitlisted = $this->makeGuest($event, ['rsvp_status' => 'waitlisted']);
+
+        $this->actingAs($user, 'sanctum')
+            ->deleteJson("/api/events/{$event->id}/guests/{$pending->id}")
+            ->assertNoContent();
+
+        $this->assertDatabaseHas('guests', ['id' => $waitlisted->id, 'rsvp_status' => 'waitlisted']);
+        Notification::assertNotSentTo($waitlisted, WaitlistPromotion::class);
     }
 }
