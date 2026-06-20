@@ -219,4 +219,123 @@ class StripeTest extends TestCase
 
         $this->postWebhook($body, 'whsec_test')->assertOk();
     }
+
+    // -------------------------------------------------------------------------
+    // SubscriptionController
+    // -------------------------------------------------------------------------
+
+    public function test_subscription_checkout_requires_auth(): void
+    {
+        $this->postJson('/api/subscriptions/checkout', ['plan' => 'pro', 'interval' => 'monthly'])
+            ->assertUnauthorized();
+    }
+
+    public function test_subscription_checkout_returns_503_when_price_not_configured(): void
+    {
+        $user = User::factory()->create();
+
+        // No price IDs configured in test env
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/subscriptions/checkout', ['plan' => 'pro', 'interval' => 'monthly'])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'This plan is not available yet.');
+    }
+
+    public function test_subscription_checkout_validates_plan_and_interval(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/subscriptions/checkout', ['plan' => 'enterprise', 'interval' => 'weekly'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['plan', 'interval']);
+    }
+
+    public function test_subscription_portal_requires_auth(): void
+    {
+        $this->postJson('/api/subscriptions/portal')->assertUnauthorized();
+    }
+
+    public function test_subscription_portal_returns_404_without_stripe_customer(): void
+    {
+        $user = User::factory()->create(['stripe_id' => null]);
+
+        $this->actingAs($user, 'sanctum')
+            ->postJson('/api/subscriptions/portal')
+            ->assertNotFound();
+    }
+
+    public function test_webhook_activates_pro_plan_on_subscription_created(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_test']);
+        config(['services.stripe.plans.pro_monthly' => 'price_pro_monthly_test']);
+
+        $user = User::factory()->create(['stripe_id' => 'cus_test123', 'plan' => 'free']);
+
+        $body = [
+            'type' => 'customer.subscription.created',
+            'data' => [
+                'object' => [
+                    'customer' => 'cus_test123',
+                    'status'   => 'active',
+                    'items'    => [
+                        'data' => [
+                            ['price' => ['id' => 'price_pro_monthly_test']],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->postWebhook($body, 'whsec_test')->assertOk();
+
+        $this->assertSame('pro', $user->fresh()->plan);
+    }
+
+    public function test_webhook_downgrades_plan_on_subscription_deleted(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_test']);
+
+        $user = User::factory()->create(['stripe_id' => 'cus_test456', 'plan' => 'pro']);
+
+        $body = [
+            'type' => 'customer.subscription.deleted',
+            'data' => [
+                'object' => [
+                    'customer' => 'cus_test456',
+                    'status'   => 'canceled',
+                    'items'    => ['data' => []],
+                ],
+            ],
+        ];
+
+        $this->postWebhook($body, 'whsec_test')->assertOk();
+
+        $this->assertSame('free', $user->fresh()->plan);
+    }
+
+    public function test_webhook_ignores_subscription_mode_checkout_session(): void
+    {
+        config(['cashier.webhook.secret' => 'whsec_test']);
+
+        $user  = User::factory()->create();
+        $event = $this->makeEvent($user);
+
+        // Subscription-mode checkout should NOT update event_pass_paid_at
+        $body = [
+            'type' => 'checkout.session.completed',
+            'data' => [
+                'object' => [
+                    'id'             => 'cs_sub_test',
+                    'mode'           => 'subscription',
+                    'payment_status' => 'paid',
+                    'metadata'       => ['event_id' => $event->id],
+                ],
+            ],
+        ];
+
+        $this->postWebhook($body, 'whsec_test')->assertOk();
+
+        $this->assertNull($event->fresh()->event_pass_paid_at);
+    }
 }

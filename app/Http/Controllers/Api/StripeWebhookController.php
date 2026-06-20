@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Stripe\Exception\SignatureVerificationException;
@@ -26,8 +27,11 @@ class StripeWebhookController extends Controller
         }
 
         match ($event->type) {
-            'checkout.session.completed' => $this->handleCheckoutCompleted($event->data->object),
-            default                       => null,
+            'checkout.session.completed'     => $this->handleCheckoutCompleted($event->data->object),
+            'customer.subscription.created',
+            'customer.subscription.updated'  => $this->handleSubscriptionUpdated($event->data->object),
+            'customer.subscription.deleted'  => $this->handleSubscriptionDeleted($event->data->object),
+            default                          => null,
         };
 
         return response('OK', 200);
@@ -35,6 +39,11 @@ class StripeWebhookController extends Controller
 
     private function handleCheckoutCompleted(object $session): void
     {
+        // Subscription checkout is handled by subscription webhooks below
+        if (($session->mode ?? '') === 'subscription') {
+            return;
+        }
+
         if (($session->payment_status ?? '') !== 'paid') {
             return;
         }
@@ -53,5 +62,35 @@ class StripeWebhookController extends Controller
             'event_pass_paid_at'         => now(),
             'stripe_checkout_session_id' => $session->id,
         ]);
+    }
+
+    private function handleSubscriptionUpdated(object $subscription): void
+    {
+        if (! in_array($subscription->status, ['active', 'trialing'])) {
+            return;
+        }
+
+        $user = User::where('stripe_id', $subscription->customer)->first();
+        if (! $user) {
+            return;
+        }
+
+        $priceId = $subscription->items->data[0]->price->id ?? null;
+        if (! $priceId) {
+            return;
+        }
+
+        $plan = SubscriptionController::planForPriceId($priceId);
+        if ($plan) {
+            $user->update(['plan' => $plan]);
+        }
+    }
+
+    private function handleSubscriptionDeleted(object $subscription): void
+    {
+        $user = User::where('stripe_id', $subscription->customer)->first();
+        if ($user && in_array($user->plan, ['pro', 'business'])) {
+            $user->update(['plan' => 'free']);
+        }
     }
 }
