@@ -38,7 +38,15 @@
 
 - **Phase 1: COMPLETE** — all features implemented, production-hardened, 127 tests passing
 - **Phase 2: COMPLETE** — recurring Pro/Business subscriptions (Cashier + Stripe), analytics dashboard, sub-events (sessions/breakouts), event file attachments, and custom domains all shipped; 162 tests passing
-- **Phase 3: NOT STARTED** — White-label, API tier, Capacitor mobile
+- **Phase 3: COMPLETE** — white-label agency branding, API key auth, QR check-in, Capacitor mobile shell + push notifications; 188 tests passing
+
+## Phase 3 Features
+
+- **White-label branding** (`WhiteLabelController`, `white_label_settings` table): Business plan only. Per-account `brand_name`, `logo_path`, `primary_color`, `accent_color`, `email_sender_name`, `hide_branding`. Logo stored on `public` disk under `white-label/{user_id}/`. RSVP `show()` includes a `branding` key when the host is on Business plan — RsvpPage applies the logo/colors/brand name and hides the "Powered by guestlist." footer when `hide_branding` is true. Frontend: `WhiteLabelSettingsPage.vue` at `/settings/white-label`.
+- **API keys** (`ApiKeyController`, `api_keys` table): Pro/Business plan. Keys prefixed `gl` + 6 random chars; stored as SHA-256 hash. Custom `ApiKeyGuard` (`auth:sanctum,api-key`) resolves `gl…` bearer tokens so all authenticated API routes accept both Sanctum tokens and API keys. `ApiKeyAuth` middleware returns a friendly 401 for invalid `gl…` tokens. Keys show creation date, last-used-at, optional expiry. Frontend: `ApiKeysPage.vue` at `/settings/api-keys`. Max 20 active keys per user.
+- **QR check-in** (`CheckInController`, `guests.checked_in_at`): `POST /api/rsvp/{token}/check-in` (host-auth) marks attending guests checked in; `DELETE` undoes it. EventDetailPage shows "Check-in" column with toggle button + checked-in count stat. "QR" button in guest list opens a modal with a client-side QR code (`qrcode` npm). Check-in scanner page (`EventCheckInPage.vue` at `/events/:id/check-in`) uses `useScanner.js` composable — native camera via `@capacitor-community/barcode-scanner` on iOS/Android, browser `prompt()` fallback on web.
+- **Push notifications** (`DeviceTokenController`, `device_tokens` table, `PushChannel`): `POST /api/device-tokens` registers FCM tokens; `DELETE` unregisters. `RsvpReceived` now dispatches push via `PushChannel` alongside email. FCM via `FIREBASE_SERVER_KEY` env var. `usePush.js` composable requests permission + registers token on first auth; wired into `App.vue` on `isAuthenticated` change.
+- **Capacitor mobile** (`capacitor.config.ts`): `@capacitor/core`, `@capacitor/ios`, `@capacitor/android`, `@capacitor/push-notifications`, `@capacitor-community/barcode-scanner` installed. `webDir: public/build` — run `npm run build` then `npx cap sync` before opening Xcode/Android Studio. Requires: Apple Developer account (iOS signing), Firebase project + `google-services.json` at `android/app/google-services.json`, `FIREBASE_SERVER_KEY` in `.env`.
 
 ## Phase 2 Features
 
@@ -116,7 +124,7 @@ Tests in `tests/Feature/`. Run against SQLite in-memory (see `phpunit.xml`).
 php artisan test
 ```
 
-**127 tests, 312 assertions. Always run before reporting a task complete. Never suppress failures.**
+**188 tests, 470 assertions. Always run before reporting a task complete. Never suppress failures.**
 
 Test files: `AuthTest`, `EventTest`, `GuestTest`, `RsvpTest`, `StripeTest`, `PasswordResetTest`, `AdminTest`
 

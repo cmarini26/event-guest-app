@@ -42,6 +42,9 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'api-key' => [
+            'driver' => 'api-key',
+        ],
     ],
 
     /*

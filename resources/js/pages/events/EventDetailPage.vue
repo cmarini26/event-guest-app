@@ -4,6 +4,7 @@ import { useRoute, useRouter, RouterLink } from 'vue-router';
 import { useEventsStore } from '@/stores/events.js';
 import { useAuthStore } from '@/stores/auth.js';
 import axios from 'axios';
+import QRCode from 'qrcode';
 
 const route = useRoute();
 const router = useRouter();
@@ -208,6 +209,43 @@ const hasPreferences = computed(() =>
     event.value && (event.value.collect_dietary || event.value.collect_accessibility || event.value.collect_seating)
 );
 
+// Check-in
+const checkingIn = ref(null);
+
+async function toggleCheckIn(guest) {
+    checkingIn.value = guest.id;
+    try {
+        if (guest.checked_in_at) {
+            await axios.delete(`/api/rsvp/${guest.rsvp_token}/check-in`);
+            guest.checked_in_at = null;
+        } else {
+            const { data } = await axios.post(`/api/rsvp/${guest.rsvp_token}/check-in`);
+            guest.checked_in_at = data.checked_in_at;
+        }
+    } finally {
+        checkingIn.value = null;
+    }
+}
+
+// QR code modal
+const qrGuest = ref(null);
+const qrDataUrl = ref('');
+
+async function showQr(guest) {
+    qrGuest.value = guest;
+    const url = `${window.location.origin}/rsvp/${guest.rsvp_token}`;
+    qrDataUrl.value = await QRCode.toDataURL(url, { width: 256, margin: 2 });
+}
+
+function closeQr() {
+    qrGuest.value = null;
+    qrDataUrl.value = '';
+}
+
+const checkedInCount = computed(() =>
+    guests.value.filter(g => g.checked_in_at).length
+);
+
 onMounted(load);
 </script>
 
@@ -297,6 +335,13 @@ onMounted(load);
                     Analytics
                 </RouterLink>
                 <RouterLink
+                    v-if="event.status === 'published'"
+                    :to="{ name: 'events.checkin', params: { id: event.id } }"
+                    class="px-3 py-1.5 text-sm border border-indigo-300 text-indigo-600 rounded-lg hover:bg-indigo-50"
+                >
+                    Check-in
+                </RouterLink>
+                <RouterLink
                     :to="{ name: 'events.edit', params: { id: event.id } }"
                     class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
@@ -315,7 +360,7 @@ onMounted(load);
         </div>
 
         <!-- Stats -->
-        <div class="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-4">
+        <div class="grid grid-cols-2 sm:grid-cols-6 gap-4 mb-4">
             <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p class="text-2xl font-bold text-gray-900">{{ stats.total }}</p>
                 <p class="text-xs text-gray-500 mt-1">Total guests</p>
@@ -335,6 +380,10 @@ onMounted(load);
             <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
                 <p class="text-2xl font-bold text-amber-600">{{ stats.waitlisted }}</p>
                 <p class="text-xs text-gray-500 mt-1">Waitlisted</p>
+            </div>
+            <div class="bg-white rounded-xl border border-gray-200 p-4 text-center">
+                <p class="text-2xl font-bold text-indigo-600">{{ checkedInCount }}</p>
+                <p class="text-xs text-gray-500 mt-1">Checked in</p>
             </div>
         </div>
 
@@ -421,6 +470,7 @@ onMounted(load);
                         <th class="px-5 py-3 text-left font-medium">Name</th>
                         <th class="px-5 py-3 text-left font-medium">Email</th>
                         <th class="px-5 py-3 text-left font-medium">Status</th>
+                        <th class="px-5 py-3 text-left font-medium">Check-in</th>
                         <th class="px-5 py-3 text-left font-medium">Plus-ones</th>
                         <th class="px-5 py-3 text-right font-medium">Actions</th>
                     </tr>
@@ -444,6 +494,22 @@ onMounted(load);
                                     {{ guest.rsvp_status }}
                                 </span>
                             </td>
+                            <td class="px-5 py-3" @click.stop>
+                                <button
+                                    v-if="guest.rsvp_status === 'attending'"
+                                    @click="toggleCheckIn(guest)"
+                                    :disabled="checkingIn === guest.id"
+                                    :class="[
+                                        'text-xs font-medium px-2 py-1 rounded-full transition-colors',
+                                        guest.checked_in_at
+                                            ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ]"
+                                >
+                                    {{ checkingIn === guest.id ? '…' : guest.checked_in_at ? 'Checked in ✓' : 'Check in' }}
+                                </button>
+                                <span v-else class="text-xs text-gray-300">—</span>
+                            </td>
                             <td class="px-5 py-3 text-gray-500">{{ guest.plus_ones?.length ?? 0 }}</td>
                             <td class="px-5 py-3 text-right" @click.stop>
                                 <div class="flex gap-2 justify-end">
@@ -458,6 +524,9 @@ onMounted(load);
                                         </button>
                                         <span v-else-if="guest.invited_at" class="text-xs text-gray-400">Invited</span>
                                     </template>
+                                    <button @click="showQr(guest)" class="text-xs text-indigo-500 hover:underline">
+                                        QR
+                                    </button>
                                     <button @click="copyRsvpLink(guest)" class="text-xs text-gray-500 hover:underline">
                                         Copy link
                                     </button>
@@ -470,7 +539,7 @@ onMounted(load);
 
                         <!-- Expanded preferences row -->
                         <tr v-if="expandedGuest?.id === guest.id" class="border-t border-gray-50 bg-gray-50">
-                            <td colspan="5" class="px-10 pb-4 pt-1">
+                            <td colspan="6" class="px-10 pb-4 pt-1">
                                 <div class="flex flex-wrap gap-x-8 gap-y-2 text-xs text-gray-600">
                                     <div v-if="event.collect_dietary">
                                         <span class="font-medium text-gray-500 uppercase tracking-wide text-[10px]">Dietary</span>
@@ -500,6 +569,25 @@ onMounted(load);
                     </template>
                 </tbody>
             </table>
+        </div>
+
+        <!-- QR code modal -->
+        <div v-if="qrGuest" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+            @click.self="closeQr">
+            <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-xs text-center">
+                <h3 class="font-semibold text-gray-900 mb-1">
+                    {{ qrGuest.first_name }} {{ qrGuest.last_name }}
+                </h3>
+                <p class="text-xs text-gray-400 mb-5">Scan to open RSVP page</p>
+                <img v-if="qrDataUrl" :src="qrDataUrl" alt="QR code" class="mx-auto rounded-lg" />
+                <p class="text-xs text-gray-400 mt-4 font-mono truncate">
+                    /rsvp/{{ qrGuest.rsvp_token.slice(0, 12) }}…
+                </p>
+                <button @click="closeQr"
+                    class="mt-6 px-5 py-2 bg-gray-900 text-white rounded-xl text-sm hover:bg-gray-800">
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 </template>

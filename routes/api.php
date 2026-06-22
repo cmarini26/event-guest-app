@@ -2,9 +2,12 @@
 
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\AnalyticsController;
+use App\Http\Controllers\Api\ApiKeyController;
 use App\Http\Controllers\Api\AttachmentController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CheckInController;
 use App\Http\Controllers\Api\CustomDomainController;
+use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\EventCheckoutController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\GuestController;
@@ -15,6 +18,7 @@ use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\SubEventController;
 use App\Http\Controllers\Api\SubscriptionController;
 use App\Http\Controllers\Api\VerifyEmailController;
+use App\Http\Controllers\Api\WhiteLabelController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('health', [HealthController::class, 'check']);
@@ -22,8 +26,8 @@ Route::get('health', [HealthController::class, 'check']);
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:10,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:5,1');
-    Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
-    Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum');
+    Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum,api-key');
+    Route::get('me', [AuthController::class, 'me'])->middleware('auth:sanctum,api-key');
     Route::post('forgot-password', [PasswordResetController::class, 'sendLink'])->middleware('throttle:5,1');
     Route::post('reset-password', [PasswordResetController::class, 'reset'])->middleware('throttle:5,1');
     Route::get('verify-email/{id}/{hash}', [VerifyEmailController::class, 'verify'])
@@ -39,14 +43,14 @@ Route::middleware('throttle:60,1')->group(function () {
 // Stripe delivers webhooks without auth — must be outside the Sanctum group
 Route::post('webhooks/stripe', [StripeWebhookController::class, 'handle']);
 
-Route::middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::middleware(['auth:sanctum,api-key', 'admin'])->group(function () {
     Route::get('admin/stats', [AdminController::class, 'stats']);
     Route::get('admin/users', [AdminController::class, 'users']);
     Route::get('admin/users/{user}/events', [AdminController::class, 'userEvents']);
     Route::post('admin/users/{user}/toggle-admin', [AdminController::class, 'toggleAdmin']);
 });
 
-Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
+Route::middleware(['auth:sanctum,api-key', 'throttle:120,1'])->group(function () {
     Route::put('auth/profile', [AuthController::class, 'updateProfile']);
     Route::put('auth/password', [AuthController::class, 'updatePassword']);
     Route::post('auth/set-password', [AuthController::class, 'setPassword']);
@@ -64,6 +68,21 @@ Route::middleware(['auth:sanctum', 'throttle:120,1'])->group(function () {
     Route::post('custom-domains', [CustomDomainController::class, 'store']);
     Route::post('custom-domains/{customDomain}/verify', [CustomDomainController::class, 'verify']);
     Route::delete('custom-domains/{customDomain}', [CustomDomainController::class, 'destroy']);
+
+    Route::get('white-label', [WhiteLabelController::class, 'show']);
+    Route::put('white-label', [WhiteLabelController::class, 'update']);
+    Route::post('white-label/logo', [WhiteLabelController::class, 'uploadLogo']);
+    Route::delete('white-label/logo', [WhiteLabelController::class, 'removeLogo']);
+
+    Route::get('api-keys', [ApiKeyController::class, 'index']);
+    Route::post('api-keys', [ApiKeyController::class, 'store']);
+    Route::delete('api-keys/{apiKey}', [ApiKeyController::class, 'destroy']);
+
+    Route::post('device-tokens', [DeviceTokenController::class, 'store']);
+    Route::delete('device-tokens/{token}', [DeviceTokenController::class, 'destroy']);
+
+    Route::post('rsvp/{token}/check-in', [CheckInController::class, 'checkIn']);
+    Route::delete('rsvp/{token}/check-in', [CheckInController::class, 'undoCheckIn']);
 
     Route::prefix('events/{event}')->group(function () {
         Route::get('analytics', [AnalyticsController::class, 'show']);

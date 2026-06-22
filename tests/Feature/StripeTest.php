@@ -232,9 +232,15 @@ class StripeTest extends TestCase
 
     public function test_subscription_checkout_returns_503_when_price_not_configured(): void
     {
+        config([
+            'services.stripe.plans.pro_monthly' => null,
+            'services.stripe.plans.pro_annual' => null,
+            'services.stripe.plans.business_monthly' => null,
+            'services.stripe.plans.business_annual' => null,
+        ]);
+
         $user = User::factory()->create();
 
-        // No price IDs configured in test env
         $this->actingAs($user, 'sanctum')
             ->postJson('/api/subscriptions/checkout', ['plan' => 'pro', 'interval' => 'monthly'])
             ->assertStatus(503)

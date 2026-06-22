@@ -17,15 +17,16 @@ class Guest extends Model
 
     protected $fillable = [
         'event_id', 'first_name', 'last_name', 'email', 'phone',
-        'rsvp_token', 'rsvp_status', 'responded_at', 'notes',
+        'rsvp_token', 'rsvp_status', 'responded_at', 'checked_in_at', 'notes',
         'dietary_preference', 'accessibility_needs', 'seating_preference', 'invited_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'responded_at' => 'datetime',
-            'invited_at' => 'datetime',
+            'responded_at'  => 'datetime',
+            'invited_at'    => 'datetime',
+            'checked_in_at' => 'datetime',
         ];
     }
 

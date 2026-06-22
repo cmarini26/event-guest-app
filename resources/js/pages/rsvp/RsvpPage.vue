@@ -24,6 +24,13 @@ const form = ref({
 
 const event = computed(() => data.value?.event);
 const guest = computed(() => data.value?.guest);
+const branding = computed(() => data.value?.branding ?? null);
+
+const brandPrimary = computed(() => branding.value?.primary_color ?? '#111827');
+const brandAccent  = computed(() => branding.value?.accent_color  ?? '#4f46e5');
+const brandName    = computed(() => branding.value?.brand_name ?? 'guestlist.');
+const hideBranding = computed(() => branding.value?.hide_branding ?? false);
+const logoUrl      = computed(() => branding.value?.logo_url ?? null);
 
 const rsvpClosed = computed(() => {
     if (!event.value) return false;
@@ -85,6 +92,14 @@ function formatDate(d, tz) {
 
 <template>
     <div class="min-h-screen bg-gray-50">
+        <!-- Branded header -->
+        <header v-if="!loading && !error" class="border-b border-gray-100 bg-white px-6 py-3 flex items-center gap-3">
+            <img v-if="logoUrl" :src="logoUrl" alt="Brand logo" class="h-8 object-contain" />
+            <span v-else class="font-semibold text-sm" :style="{ color: brandPrimary }">
+                {{ brandName }}
+            </span>
+        </header>
+
         <div v-if="loading" class="flex items-center justify-center min-h-screen text-gray-400">
             Loading...
         </div>
@@ -241,12 +256,19 @@ function formatDate(d, tz) {
                     <button
                         type="submit"
                         :disabled="!form.status || submitting"
-                        class="w-full py-3 bg-gray-900 text-white rounded-xl text-sm font-medium hover:bg-gray-800 disabled:opacity-40"
+                        class="w-full py-3 rounded-xl text-sm font-medium text-white disabled:opacity-40"
+                        :style="{ backgroundColor: brandPrimary }"
                     >
                         {{ submitting ? 'Submitting...' : 'Submit RSVP' }}
                     </button>
                 </form>
             </div>
         </div>
+
+        <!-- Powered by footer (hidden for white-label clients with hide_branding) -->
+        <p v-if="!loading && !error && !hideBranding"
+            class="text-center text-xs text-gray-400 py-6">
+            Powered by <span class="font-medium">guestlist.</span>
+        </p>
     </div>
 </template>

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Event;
 use App\Models\Guest;
+use App\Notifications\Channels\PushChannel;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -20,7 +21,27 @@ class RsvpReceived extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return ['mail', PushChannel::class];
+    }
+
+    public function toPush(object $notifiable): array
+    {
+        $guestName = "{$this->guest->first_name} {$this->guest->last_name}";
+        $verb = match ($this->guest->rsvp_status) {
+            'attending'  => 'is attending',
+            'declined'   => 'declined',
+            'waitlisted' => 'joined the waitlist for',
+            default      => 'responded to',
+        };
+
+        return [
+            'title' => 'New RSVP',
+            'body'  => "{$guestName} {$verb} {$this->event->name}",
+            'data'  => [
+                'event_id' => (string) $this->event->id,
+                'type'     => 'rsvp_received',
+            ],
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

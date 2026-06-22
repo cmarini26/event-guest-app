@@ -14,9 +14,13 @@ class RsvpController extends Controller
 {
     public function show(string $token): JsonResponse
     {
-        $guest = Guest::with(['event', 'plusOnes'])
+        $guest = Guest::with(['event.user.whiteLabelSetting', 'plusOnes'])
             ->where('rsvp_token', $token)
             ->firstOrFail();
+
+        $wl = $guest->event->user?->canUseWhiteLabel()
+            ? $guest->event->user->whiteLabelSetting
+            : null;
 
         return response()->json([
             'guest' => [
@@ -45,6 +49,13 @@ class RsvpController extends Controller
                 'is_at_capacity' => $guest->event->isAtCapacity(),
                 'status' => $guest->event->status,
             ],
+            'branding' => $wl ? [
+                'brand_name'    => $wl->brand_name,
+                'logo_url'      => $wl->logo_url,
+                'primary_color' => $wl->primary_color,
+                'accent_color'  => $wl->accent_color,
+                'hide_branding' => $wl->hide_branding,
+            ] : null,
         ]);
     }
 

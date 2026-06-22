@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
@@ -39,6 +40,31 @@ class User extends Authenticatable implements MustVerifyEmail
     public function customDomains(): HasMany
     {
         return $this->hasMany(CustomDomain::class);
+    }
+
+    public function apiKeys(): HasMany
+    {
+        return $this->hasMany(ApiKey::class);
+    }
+
+    public function deviceTokens(): HasMany
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    public function whiteLabelSetting(): HasOne
+    {
+        return $this->hasOne(WhiteLabelSetting::class);
+    }
+
+    public function canUseWhiteLabel(): bool
+    {
+        return $this->plan === 'business';
+    }
+
+    public function canUseApi(): bool
+    {
+        return in_array($this->plan, ['pro', 'business'], true);
     }
 
     public function canUseCustomDomains(): bool

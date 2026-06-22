@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Auth\ApiKeyGuard;
 use App\Models\Event;
 use App\Policies\EventPolicy;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -20,6 +22,8 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\DnsVerifier::class,
             \App\Services\SystemDnsVerifier::class
         );
+
+        Auth::extend('api-key', fn ($app) => new ApiKeyGuard($app->make('request')));
     }
 
     public function boot(): void

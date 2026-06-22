@@ -106,6 +106,22 @@ const plans = [
         ctaTo: { name: 'register' },
         highlight: false,
     },
+    {
+        name: 'Business',
+        price: '$79',
+        period: 'month',
+        description: 'White-label branding and API access for agencies.',
+        features: [
+            'Everything in Pro',
+            'White-label branding',
+            'Custom logo & colors',
+            'API key access',
+            'Remove "Powered by" footer',
+        ],
+        cta: 'Start with Business',
+        ctaTo: { name: 'register' },
+        highlight: false,
+    },
 ];
 </script>
 
@@ -379,7 +395,7 @@ const plans = [
                     <p class="text-gray-500">Start free. Pay only when you need more room.</p>
                 </div>
 
-                <div class="grid md:grid-cols-3 gap-6 items-start">
+                <div class="grid md:grid-cols-4 gap-6 items-start">
                     <div
                         v-for="plan in plans"
                         :key="plan.name"

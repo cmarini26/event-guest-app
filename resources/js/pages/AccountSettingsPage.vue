@@ -325,7 +325,7 @@ async function deleteAccount() {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <!-- Pro -->
                     <div class="border border-gray-200 rounded-xl p-4">
-                        <p class="text-sm font-semibold text-gray-900 mb-0.5">Pro</p>
+                        <p class="text-sm font-semibold text-gray-900 mb-0.5">Pro — $29/mo</p>
                         <p class="text-xs text-gray-500 mb-3">Unlimited guests · Unlimited events</p>
                         <div class="flex gap-2">
                             <button @click="upgradePlan('pro', 'monthly')"
@@ -342,8 +342,8 @@ async function deleteAccount() {
                     </div>
                     <!-- Business -->
                     <div class="border border-gray-200 rounded-xl p-4">
-                        <p class="text-sm font-semibold text-gray-900 mb-0.5">Business</p>
-                        <p class="text-xs text-gray-500 mb-3">Everything in Pro · Priority support</p>
+                        <p class="text-sm font-semibold text-gray-900 mb-0.5">Business — $79/mo</p>
+                        <p class="text-xs text-gray-500 mb-3">White-label · API keys · Custom domains</p>
                         <div class="flex gap-2">
                             <button @click="upgradePlan('business', 'monthly')"
                                 :disabled="upgradingTo !== ''"
@@ -372,6 +372,32 @@ async function deleteAccount() {
             <RouterLink :to="{ name: 'custom-domains' }"
                 class="inline-block text-sm text-indigo-600 hover:text-indigo-700 font-medium">
                 Manage custom domains →
+            </RouterLink>
+        </section>
+
+        <!-- White-label branding (Business only) -->
+        <section v-if="auth.user?.plan === 'business'"
+            class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-1">White-label Branding</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Apply your own logo, colors, and sender name to all RSVP pages and emails.
+            </p>
+            <RouterLink :to="{ name: 'white-label' }"
+                class="inline-block text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                Manage branding →
+            </RouterLink>
+        </section>
+
+        <!-- API keys (Pro/Business) -->
+        <section v-if="['pro', 'business'].includes(auth.user?.plan)"
+            class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+            <h2 class="text-base font-semibold text-gray-900 mb-1">API Keys</h2>
+            <p class="text-sm text-gray-500 mb-4">
+                Create API keys for programmatic access to your account.
+            </p>
+            <RouterLink :to="{ name: 'api-keys' }"
+                class="inline-block text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                Manage API keys →
             </RouterLink>
         </section>
 

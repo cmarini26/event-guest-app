@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\SecureHeaders::class);
+        // Run API key resolution before Sanctum so auth()->user() is set for both paths
+        $middleware->appendToGroup('api', \App\Http\Middleware\ApiKeyAuth::class);
         $middleware->alias(['admin' => \App\Http\Middleware\AdminMiddleware::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
