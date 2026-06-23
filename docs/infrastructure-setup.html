@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>guestlist. — AWS Infrastructure Setup Guide</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1a1a1a;
+    background: #fff;
+    padding: 48px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* Print */
+  @media print {
+    body { padding: 0; font-size: 11px; }
+    .no-print { display: none; }
+    h1 { page-break-before: avoid; }
+    h2 { page-break-after: avoid; }
+    pre, table { page-break-inside: avoid; }
+    .phase { page-break-inside: avoid; }
+  }
+
+  /* Print button */
+  .print-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #4f46e5;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+  }
+  .print-btn:hover { background: #4338ca; }
+
+  /* Header */
+  .doc-header {
+    border-bottom: 3px solid #4f46e5;
+    padding-bottom: 24px;
+    margin-bottom: 36px;
+  }
+  .doc-header .logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #111;
+  }
+  .doc-header .logo span { color: #4f46e5; }
+  .doc-header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: #111;
+    margin-top: 8px;
+    letter-spacing: -0.5px;
+  }
+  .doc-header .meta {
+    margin-top: 6px;
+    font-size: 12px;
+    color: #666;
+  }
+
+  /* Architecture diagram */
+  .arch {
+    background: #f8f8ff;
+    border: 1px solid #e0e0f0;
+    border-radius: 10px;
+    padding: 24px 32px;
+    margin-bottom: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    flex-wrap: wrap;
+  }
+  .arch-box {
+    background: white;
+    border: 1.5px solid #c7d2fe;
+    border-radius: 8px;
+    padding: 10px 16px;
+    text-align: center;
+    min-width: 100px;
+  }
+  .arch-box .label { font-size: 10px; color: #6366f1; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+  .arch-box .name { font-size: 13px; font-weight: 600; color: #1e1b4b; margin-top: 2px; }
+  .arch-box .detail { font-size: 10px; color: #888; margin-top: 1px; }
+  .arch-arrow {
+    color: #a5b4fc;
+    font-size: 18px;
+    padding: 0 8px;
+    font-weight: 300;
+  }
+  .arch-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Cost table */
+  .cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 36px;
+    font-size: 12px;
+  }
+  .cost-table th {
+    background: #f5f3ff;
+    color: #4f46e5;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .cost-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+  }
+  .cost-table tr:last-child td { border-bottom: 2px solid #e0e0e0; font-weight: 700; }
+  .cost-table .total-row td { background: #fafafa; }
+
+  /* Phases */
+  .phase {
+    margin-bottom: 36px;
+  }
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid #e5e7eb;
+  }
+  .phase-badge {
+    background: #4f46e5;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #111;
+  }
+  h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #374151;
+    margin: 16px 0 6px;
+  }
+  p { margin-bottom: 8px; color: #374151; }
+
+  /* Code blocks */
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    overflow-x: auto;
+    margin: 10px 0 16px;
+  }
+  code {
+    background: #f0f0f0;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    color: #4f46e5;
+  }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  /* Comment line */
+  .comment { color: #6c7086; }
+
+  /* Checklist */
+  .checklist { list-style: none; margin: 8px 0 16px; }
+  .checklist li {
+    padding: 5px 0 5px 28px;
+    position: relative;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 12px;
+    color: #374151;
+  }
+  .checklist li::before {
+    content: '☐';
+    position: absolute;
+    left: 4px;
+    color: #9ca3af;
+    font-size: 14px;
+  }
+  .checklist li strong { color: #111; }
+
+  /* Info / warning boxes */
+  .callout {
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 12px 0 16px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .callout.info { background: #eff6ff; border-left: 4px solid #3b82f6; color: #1e40af; }
+  .callout.warn { background: #fffbeb; border-left: 4px solid #f59e0b; color: #92400e; }
+  .callout.tip  { background: #f0fdf4; border-left: 4px solid #22c55e; color: #14532d; }
+  .callout strong { display: block; margin-bottom: 2px; }
+
+  /* Inline table */
+  .kv-table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 12px; }
+  .kv-table td { padding: 6px 10px; border: 1px solid #e5e7eb; vertical-align: top; }
+  .kv-table td:first-child { font-weight: 600; width: 38%; background: #fafafa; color: #374151; }
+
+  /* Section divider */
+  .divider { border: none; border-top: 1px dashed #e5e7eb; margin: 32px 0; }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+    font-size: 11px;
+    color: #9ca3af;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Save as PDF</button>
+
+<!-- Header -->
+<div class="doc-header">
+  <div class="logo">guestlist<span>.</span></div>
+  <h1>AWS Infrastructure Setup Guide</h1>
+  <div class="meta">Laravel 13 + Vue 3 SPA &nbsp;·&nbsp; AWS EC2 + RDS + S3 &nbsp;·&nbsp; GitHub Actions CI/CD &nbsp;·&nbsp; June 2026</div>
+</div>
+
+<!-- Architecture -->
+<div class="arch">
+  <div class="arch-box">
+    <div class="label">Users</div>
+    <div class="name">Browser / iOS / Android</div>
+    <div class="detail">HTTPS</div>
+  </div>
+  <div class="arch-arrow">→</div>
+  <div class="arch-box">
+    <div class="label">Edge</div>
+    <div class="name">EC2 + Nginx</div>
+    <div class="detail">t3.small · Let's Encrypt</div>
+  </div>
+  <div class="arch-arrow">→</div>
+  <div class="arch-group">
+    <div class="arch-box">
+      <div class="label">Database</div>
+      <div class="name">RDS PostgreSQL</div>
+      <div class="detail">t3.micro · private subnet</div>
+    </div>
+    <div class="arch-box">
+      <div class="label">Storage</div>
+      <div class="name">S3</div>
+      <div class="detail">attachments · logos</div>
+    </div>
+  </div>
+  <div class="arch-arrow">←</div>
+  <div class="arch-box">
+    <div class="label">CI/CD</div>
+    <div class="name">GitHub Actions</div>
+    <div class="detail">test → build → SSH deploy</div>
+  </div>
+</div>
+
+<!-- Cost -->
+<table class="cost-table">
+  <thead>
+    <tr><th>Service</th><th>Spec</th><th>Purpose</th><th>~Cost/mo</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>EC2 t3.small</td><td>2 vCPU · 2 GB RAM</td><td>App server — runs all projects via Nginx virtual hosts</td><td>$17</td></tr>
+    <tr><td>RDS db.t3.micro</td><td>PostgreSQL 16 · 20 GB gp3</td><td>Managed DB — one instance, one database per project</td><td>$15</td></tr>
+    <tr><td>S3</td><td>Standard storage</td><td>File attachments + white-label logos</td><td>&lt;$1</td></tr>
+    <tr><td>Elastic IP</td><td>—</td><td>Static IP for all DNS records</td><td>$0 (free while attached)</td></tr>
+    <tr><td>Data transfer</td><td>—</td><td>Outbound to internet</td><td>~$1</td></tr>
+    <tr class="total-row"><td colspan="3"><strong>Total (shared across all projects)</strong></td><td><strong>~$34/mo</strong></td></tr>
+  </tbody>
+</table>
+
+<div class="callout info">
+  <strong>Multi-project note</strong>
+  One EC2 instance + one RDS instance serves all your starter projects. Add a new project by creating a new database, a new Nginx virtual host, and a new GitHub Actions workflow. The monthly cost stays flat.
+</div>
+
+<div class="callout warn">
+  <strong>Load balancing / Auto-scaling: not yet</strong>
+  An Application Load Balancer costs ~$20/mo with zero traffic benefit at early stage. A t3.small handles 300–500 concurrent users comfortably. Add an ALB + Auto Scaling Group when monthly revenue justifies ~$50/mo extra, or when EC2 CPU is consistently above 70%. Upgrade path: add ALB in front, move sessions to ElastiCache Redis, configure Launch Template for ASG.
+</div>
+
+<hr class="divider" />
+
+<!-- PHASE A -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Phase A</span>
+    <h2>EC2 Server Setup (one-time)</h2>
+  </div>
+
+  <h3>1. Launch EC2 instance</h3>
+  <ul class="checklist">
+    <li>Go to <strong>EC2 → Launch Instance</strong></li>
+    <li>AMI: <strong>Ubuntu Server 22.04 LTS</strong></li>
+    <li>Instance type: <strong>t3.small</strong></li>
+    <li>Key pair: create or select an existing SSH key pair — download the <code>.pem</code> file</li>
+    <li>Security group: allow inbound <strong>22</strong> (SSH), <strong>80</strong> (HTTP), <strong>443</strong> (HTTPS)</li>
+    <li>Storage: <strong>20 GB gp3</strong></li>
+    <li>Launch the instance</li>
+  </ul>
+
+  <h3>2. Allocate and attach an Elastic IP</h3>
+  <ul class="checklist">
+    <li><strong>EC2 → Elastic IPs → Allocate Elastic IP address</strong></li>
+    <li>Associate it with your new instance</li>
+    <li>Record this IP — every project's DNS A record points here</li>
+  </ul>
+
+  <h3>3. Install the server stack</h3>
+  <p>SSH in: <code>ssh -i your-key.pem ubuntu@&lt;elastic-ip&gt;</code></p>
+<pre><code>sudo apt update && sudo apt upgrade -y
+
+# PHP 8.3
+sudo add-apt-repository ppa:ondrej/php -y
+sudo apt install -y php8.3-fpm php8.3-cli php8.3-pgsql php8.3-mbstring \
+  php8.3-xml php8.3-curl php8.3-zip php8.3-bcmath php8.3-intl
+
+# Nginx, Node, Certbot
+sudo apt install -y nginx nodejs npm certbot python3-certbot-nginx unzip git
+
+# Composer
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer</code></pre>
+
+  <h3>4. Create a deploy user</h3>
+  <p>GitHub Actions will SSH as this user. Never use <code>root</code> or <code>ubuntu</code> for deployments.</p>
+<pre><code>sudo useradd -m -s /bin/bash deploy
+sudo mkdir -p /home/deploy/.ssh
+sudo touch /home/deploy/.ssh/authorized_keys
+sudo chmod 700 /home/deploy/.ssh
+sudo chmod 600 /home/deploy/.ssh/authorized_keys
+sudo chown -R deploy:deploy /home/deploy/.ssh
+sudo usermod -aG www-data deploy
+
+<span class="comment"># Paste GitHub Actions public key into authorized_keys:
+# sudo nano /home/deploy/.ssh/authorized_keys</span></code></pre>
+
+  <p>Give deploy passwordless permission to restart Supervisor workers:</p>
+<pre><code>sudo visudo
+<span class="comment"># Add this line:</span>
+deploy ALL=(ALL) NOPASSWD: /usr/bin/supervisorctl</code></pre>
+</div>
+
+<!-- PHASE B -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Phase B</span>
+    <h2>RDS PostgreSQL (one-time)</h2>
+  </div>
+
+  <ul class="checklist">
+    <li><strong>RDS → Create database</strong> → Standard create → PostgreSQL 16</li>
+    <li>Template: <strong>Free tier</strong> (or Dev/Test for Multi-AZ later)</li>
+    <li>Instance class: <strong>db.t3.micro</strong></li>
+    <li>Storage: <strong>20 GB gp3</strong>, enable auto-scaling</li>
+    <li>Master username: <code>postgres</code>, generate a strong password</li>
+    <li>VPC: <strong>same VPC as EC2</strong></li>
+    <li>Security group: create a new one, allow port <strong>5432</strong> from EC2's <strong>private IP</strong> only — never public</li>
+    <li>Disable public accessibility</li>
+    <li>Create the database, then note the <strong>endpoint hostname</strong></li>
+  </ul>
+
+  <h3>Create a database per project</h3>
+<pre><code><span class="comment"># From EC2, connect to RDS:</span>
+psql -h &lt;rds-endpoint&gt; -U postgres
+
+<span class="comment"># Then in psql:</span>
+CREATE DATABASE guestlist;
+CREATE USER guestlist WITH PASSWORD 'strong-password-here';
+GRANT ALL PRIVILEGES ON DATABASE guestlist TO guestlist;
+\c guestlist
+GRANT ALL ON SCHEMA public TO guestlist;</code></pre>
+</div>
+
+<!-- PHASE C -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Phase C</span>
+    <h2>S3 File Storage (one-time)</h2>
+  </div>
+
+  <h3>Create a bucket per project</h3>
+  <ul class="checklist">
+    <li><strong>S3 → Create bucket</strong></li>
+    <li>Name: <code>guestlist-production-files</code> (must be globally unique)</li>
+    <li>Region: <strong>us-east-1</strong> (same as EC2 for low latency)</li>
+    <li>Block all public access: <strong>ON</strong> (files served via signed URLs)</li>
+    <li>Versioning: off (not needed for uploads)</li>
+  </ul>
+
+  <h3>Create IAM user + policy</h3>
+  <ul class="checklist">
+    <li><strong>IAM → Users → Create user</strong> — name: <code>guestlist-app</code></li>
+    <li>Attach a custom policy (not Admin — least privilege):</li>
+  </ul>
+<pre><code>{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:PutObjectAcl"
+      ],
+      "Resource": "arn:aws:s3:::guestlist-production-files/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::guestlist-production-files"
+    }
+  ]
+}</code></pre>
+  <ul class="checklist">
+    <li>Create <strong>Access Key</strong> (CLI/SDK type) → save <code>AWS_ACCESS_KEY_ID</code> and <code>AWS_SECRET_ACCESS_KEY</code></li>
+  </ul>
+
+  <h3>CORS policy (required for direct browser uploads)</h3>
+<pre><code>[
+  {
+    "AllowedHeaders": ["*"],
+    "AllowedMethods": ["GET", "PUT", "POST", "DELETE"],
+    "AllowedOrigins": ["https://yourdomain.com"],
+    "ExposeHeaders": ["ETag"]
+  }
+]</code></pre>
+</div>
+
+<!-- PHASE D -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Phase D</span>
+    <h2>Per-Project Server Configuration</h2>
+  </div>
+  <p><em>Repeat these steps for each new project deployed to this server.</em></p>
+
+  <h3>1. Create app directory</h3>
+<pre><code>sudo mkdir -p /var/www/guestlist
+sudo chown deploy:www-data /var/www/guestlist
+sudo chmod 775 /var/www/guestlist
+
+<span class="comment"># Clone the repo as deploy user:</span>
+sudo -u deploy git clone git@github.com:cmarini26/event-guest-app.git /var/www/guestlist</code></pre>
+
+  <h3>2. Nginx virtual host</h3>
+<pre><code><span class="comment"># /etc/nginx/sites-available/guestlist</span>
+server {
+    listen 80;
+    server_name yourdomain.com;
+    root /var/www/guestlist/public;
+    index index.php;
+
+    client_max_body_size 20M;
+
+    add_header X-Frame-Options "DENY";
+    add_header X-Content-Type-Options "nosniff";
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
+
+<span class="comment"># Enable + SSL:</span>
+sudo ln -s /etc/nginx/sites-available/guestlist /etc/nginx/sites-enabled/
+sudo certbot --nginx -d yourdomain.com
+sudo nginx -t && sudo systemctl reload nginx</code></pre>
+
+  <h3>3. Environment file</h3>
+<pre><code><span class="comment"># /var/www/guestlist/.env  (set on server, never committed to git)</span>
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
+APP_KEY=  <span class="comment"># php artisan key:generate</span>
+APP_TIMEZONE=UTC
+
+DB_CONNECTION=pgsql
+DB_HOST=&lt;rds-endpoint&gt;
+DB_DATABASE=guestlist
+DB_USERNAME=guestlist
+DB_PASSWORD=&lt;strong-password&gt;
+
+FILESYSTEM_DISK=s3
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=guestlist-production-files
+
+QUEUE_CONNECTION=database
+MAIL_MAILER=resend
+MAIL_FROM_ADDRESS=hello@yourdomain.com
+MAIL_FROM_NAME="guestlist."
+RESEND_API_KEY=re_...
+
+STRIPE_KEY=pk_live_...
+STRIPE_SECRET=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRO_MONTHLY_PRICE_ID=price_...
+STRIPE_PRO_ANNUAL_PRICE_ID=price_...
+STRIPE_BUSINESS_MONTHLY_PRICE_ID=price_...
+STRIPE_BUSINESS_ANNUAL_PRICE_ID=price_...
+
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+
+SANCTUM_TOKEN_EXPIRATION=43200
+SESSION_DRIVER=database
+CACHE_STORE=database</code></pre>
+
+  <h3>4. First-time bootstrap</h3>
+<pre><code>cd /var/www/guestlist
+composer install --no-dev --optimize-autoloader
+npm ci && npm run build
+php artisan key:generate
+php artisan migrate --force
+php artisan optimize
+<span class="comment"># storage:link not needed — using S3</span></code></pre>
+
+  <h3>5. Queue worker (Supervisor)</h3>
+<pre><code><span class="comment"># /etc/supervisor/conf.d/guestlist-worker.conf</span>
+[program:guestlist-worker]
+command=php /var/www/guestlist/artisan queue:work database --tries=3 --sleep=3 --max-time=3600
+user=deploy
+numprocs=2
+autostart=true
+autorestart=true
+redirect_stderr=true
+stdout_logfile=/var/log/guestlist-worker.log</code></pre>
+<pre><code>sudo supervisorctl reread && sudo supervisorctl update
+sudo supervisorctl start guestlist-worker:*</code></pre>
+
+  <h3>6. Scheduler</h3>
+<pre><code><span class="comment"># Run as deploy user:</span>
+crontab -e -u deploy
+<span class="comment"># Add:</span>
+* * * * * php /var/www/guestlist/artisan schedule:run >> /dev/null 2>&1</code></pre>
+</div>
+
+<!-- PHASE E -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Phase E</span>
+    <h2>GitHub Actions CI/CD</h2>
+  </div>
+
+  <h3>Generate deploy SSH key pair</h3>
+<pre><code>ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/deploy_key -N ""
+<span class="comment"># Add public key to server's deploy user:</span>
+cat ~/.ssh/deploy_key.pub | ssh ubuntu@&lt;elastic-ip&gt; \
+  "sudo tee -a /home/deploy/.ssh/authorized_keys"</code></pre>
+
+  <h3>Add GitHub Secrets</h3>
+  <p>In the repo: <strong>Settings → Secrets and variables → Actions → New repository secret</strong></p>
+  <table class="kv-table">
+    <tr><td>EC2_HOST</td><td>Your Elastic IP address</td></tr>
+    <tr><td>EC2_SSH_KEY</td><td>Contents of <code>~/.ssh/deploy_key</code> (private key)</td></tr>
+  </table>
+
+  <h3>Workflow file</h3>
+  <p>Create <code>.github/workflows/deploy.yml</code> in the repo:</p>
+<pre><code>name: Test & Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_sqlite, mbstring, xml, curl, zip, bcmath
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests
+        run: php artisan test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build frontend assets
+        run: npm ci && npm run build
+
+      - name: Upload built assets to EC2
+        uses: appleboy/scp-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: deploy
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "public/build"
+          target: "/var/www/guestlist/public"
+          strip_components: 1
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: deploy
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            cd /var/www/guestlist
+
+            git pull origin main
+
+            composer install --no-dev --optimize-autoloader --no-interaction
+
+            php artisan migrate --force
+            php artisan optimize
+
+            sudo supervisorctl restart guestlist-worker:*
+
+            echo "Deploy complete at $(date)"</code></pre>
+
+  <div class="callout tip">
+    <strong>How it works</strong>
+    Every push to <code>main</code> runs the full test suite first. If any test fails, the deploy step is skipped — broken code never reaches production. Frontend assets are built in the CI runner (not on the server), transferred via SCP, then the server pulls the PHP source and runs migrations.
+  </div>
+</div>
+
+<!-- PHASE F -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Phase F</span>
+    <h2>Third-Party Services</h2>
+  </div>
+
+  <h3>Resend (email)</h3>
+  <ul class="checklist">
+    <li>Sign up at <strong>resend.com</strong> → Add domain → copy DNS records (SPF, DKIM, DMARC) to your DNS provider</li>
+    <li>Wait for domain verification (usually &lt;5 minutes)</li>
+    <li>Create API key → <code>RESEND_API_KEY</code></li>
+    <li>Set <code>MAIL_FROM_ADDRESS=hello@yourdomain.com</code></li>
+  </ul>
+
+  <h3>Stripe</h3>
+  <ul class="checklist">
+    <li>Dashboard → API Keys → copy <code>STRIPE_KEY</code> (publishable) and <code>STRIPE_SECRET</code></li>
+    <li>Create <strong>Event Pass</strong> product: $19.00 one-time</li>
+    <li>Create <strong>Pro</strong> product: $29/month + $290/year (two prices)</li>
+    <li>Create <strong>Business</strong> product: $79/month + $790/year (two prices)</li>
+    <li>Copy the 4 recurring price IDs into env vars</li>
+    <li>Webhooks → Add endpoint: <code>https://yourdomain.com/api/webhooks/stripe</code></li>
+    <li>Events: <code>checkout.session.completed</code>, <code>customer.subscription.created</code>, <code>customer.subscription.updated</code>, <code>customer.subscription.deleted</code></li>
+    <li>Copy signing secret → <code>STRIPE_WEBHOOK_SECRET</code></li>
+    <li>Settings → Billing → Customer portal → Enable</li>
+  </ul>
+
+  <h3>Google OAuth</h3>
+  <ul class="checklist">
+    <li>console.cloud.google.com → New project → APIs & Services → Credentials</li>
+    <li>Create OAuth 2.0 Client ID (Web application type)</li>
+    <li>Authorized redirect URIs: <code>https://yourdomain.com/auth/google/callback</code></li>
+    <li>Copy Client ID → <code>GOOGLE_CLIENT_ID</code> and Client Secret → <code>GOOGLE_CLIENT_SECRET</code></li>
+  </ul>
+</div>
+
+<!-- PHASE G -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Phase G</span>
+    <h2>Go-Live Smoke Test</h2>
+  </div>
+
+  <ul class="checklist">
+    <li><strong>Health check:</strong> <code>GET https://yourdomain.com/api/health</code> returns <code>{"status":"ok"}</code></li>
+    <li><strong>Registration:</strong> create account → receive verification email → verify → land on dashboard</li>
+    <li><strong>Event creation:</strong> create event → publish → RSVP as guest → host receives email notification</li>
+    <li><strong>File upload:</strong> attach a PDF to an event → confirm URL is an S3 URL</li>
+    <li><strong>Stripe Event Pass:</strong> checkout → Stripe test card → webhook fires → <code>event_pass_paid_at</code> set</li>
+    <li><strong>Stripe subscription:</strong> upgrade to Pro → webhook fires → <code>users.plan = pro</code></li>
+    <li><strong>Password reset:</strong> full flow end-to-end</li>
+    <li><strong>Google OAuth:</strong> sign in with Google → lands on dashboard</li>
+    <li><strong>Admin:</strong> <code>php artisan admin:promote your@email.com</code> → <code>/admin</code> accessible</li>
+    <li><strong>Queue worker:</strong> <code>sudo supervisorctl status</code> shows workers <code>RUNNING</code></li>
+    <li><strong>Uptime monitoring:</strong> set up UptimeRobot or Better Uptime on <code>/api/health</code></li>
+  </ul>
+</div>
+
+<!-- Future scaling -->
+<div class="phase">
+  <div class="phase-header">
+    <span class="phase-badge">Future</span>
+    <h2>When to Scale Up</h2>
+  </div>
+
+  <table class="kv-table">
+    <tr><td>EC2 CPU consistently &gt;70%</td><td>Upgrade to t3.medium ($33/mo) or add ALB + Auto Scaling Group</td></tr>
+    <tr><td>DB CPU &gt;70% or IOPS maxed</td><td>Upgrade to db.t3.small, add read replica, or enable RDS Proxy</td></tr>
+    <tr><td>Queue depth growing</td><td>Increase Supervisor <code>numprocs</code> or move to SQS</td></tr>
+    <tr><td>Need zero-downtime deploys</td><td>Add ALB, use blue/green deploy via AWS CodeDeploy</td></tr>
+    <tr><td>Global audience / latency</td><td>Add CloudFront CDN in front of EC2 + S3</td></tr>
+    <tr><td>Mobile push at scale</td><td>Migrate from FCM Legacy HTTP to Firebase Admin SDK or AWS SNS</td></tr>
+  </table>
+</div>
+
+<div class="doc-footer">
+  <span>guestlist. — Internal infrastructure document</span>
+  <span>Generated June 2026</span>
+</div>
+
+</body>
+</html>

@@ -52,15 +52,16 @@ class WhiteLabelController extends Controller
 
         // Delete old logo if it exists
         if ($setting->logo_path) {
-            Storage::disk('public')->delete($setting->logo_path);
+            Storage::disk($setting->logo_disk ?? config('filesystems.default'))->delete($setting->logo_path);
         }
 
+        $disk = config('filesystems.default');
         $path = $request->file('logo')->store(
             'white-label/' . $request->user()->id,
-            'public'
+            $disk
         );
 
-        $setting->update(['logo_path' => $path]);
+        $setting->update(['logo_path' => $path, 'logo_disk' => $disk]);
 
         return response()->json($setting->fresh());
     }
@@ -72,8 +73,9 @@ class WhiteLabelController extends Controller
         $setting = $request->user()->whiteLabelSetting;
 
         if ($setting && $setting->logo_path) {
-            Storage::disk('public')->delete($setting->logo_path);
-            $setting->update(['logo_path' => null]);
+            $disk = $setting->logo_disk ?? config('filesystems.default');
+            Storage::disk($disk)->delete($setting->logo_path);
+            $setting->update(['logo_path' => null, 'logo_disk' => null]);
         }
 
         return response()->json($setting?->fresh() ?? (object) []);

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Storage;
 class WhiteLabelSetting extends Model
 {
     protected $fillable = [
-        'user_id', 'brand_name', 'logo_path', 'primary_color',
+        'user_id', 'brand_name', 'logo_path', 'logo_disk', 'primary_color',
         'accent_color', 'email_sender_name', 'hide_branding',
     ];
 
@@ -29,16 +29,19 @@ class WhiteLabelSetting extends Model
 
     public function getLogoUrlAttribute(): ?string
     {
-        return $this->logo_path
-            ? Storage::disk('public')->url($this->logo_path)
-            : null;
+        if (! $this->logo_path) {
+            return null;
+        }
+        $disk = $this->logo_disk ?? config('filesystems.default');
+        return Storage::disk($disk)->url($this->logo_path);
     }
 
     protected static function booted(): void
     {
         static::deleting(function (WhiteLabelSetting $setting) {
             if ($setting->logo_path) {
-                Storage::disk('public')->delete($setting->logo_path);
+                $disk = $setting->logo_disk ?? config('filesystems.default');
+                Storage::disk($disk)->delete($setting->logo_path);
             }
         });
     }

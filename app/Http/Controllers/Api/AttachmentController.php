@@ -43,10 +43,11 @@ class AttachmentController extends Controller
         ]);
 
         $file = $request->file('file');
-        $path = $file->store('attachments/'.$event->id, 'public');
+        $disk = config('filesystems.default');
+        $path = $file->store('attachments/'.$event->id, $disk);
 
         $attachment = $event->attachments()->create([
-            'disk' => 'public',
+            'disk' => $disk,
             'path' => $path,
             'original_name' => $file->getClientOriginalName(),
             'mime_type' => $file->getClientMimeType(),
